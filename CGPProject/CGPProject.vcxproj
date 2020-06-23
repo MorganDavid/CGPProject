@@ -22,6 +22,7 @@
     <ClCompile Include="adder_test.cpp" />
     <ClCompile Include="cgp.c" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="mycgp.cpp" />
     <ClCompile Include="myhelpers.cpp" />
     <ClCompile Include="my_fourier.cpp" />
   </ItemGroup>
