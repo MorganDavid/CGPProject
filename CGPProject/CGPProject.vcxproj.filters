@@ -27,15 +27,21 @@
     <ClCompile Include="my_fourier.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="myhelpers.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="mycgp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cgp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="mycgp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="my_fourier.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="myhelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

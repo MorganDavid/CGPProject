@@ -23,11 +23,13 @@
     <ClCompile Include="cgp.c" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mycgp.cpp" />
-    <ClCompile Include="myhelpers.cpp" />
     <ClCompile Include="my_fourier.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cgp.h" />
+    <ClInclude Include="mycgp.h" />
+    <ClInclude Include="myhelpers.h" />
+    <ClInclude Include="my_fourier.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\Google Drive\_University (Notts)\Semester 2\GP\auto-mpg-edit.csv" />
@@ -118,7 +120,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NO_DLL</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)fftw-3.3.5-dll64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>E:\boost_1_73_0\boost_1_73_0;$(ProjectDir)fftw-3.3.5-dll64;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <UndefinePreprocessorDefinitions>BUILD_DLL</UndefinePreprocessorDefinitions>
     </ClCompile>
     <Link>
