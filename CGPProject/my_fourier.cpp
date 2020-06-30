@@ -11,7 +11,8 @@
 #include "myhelpers.h"
 #include <boost/numeric/ublas/matrix.hpp>
 #include <cmath>
-
+#include <valarray>
+#include<complex>
 
 /// <summary>
 /// Computes forward fourier transform on this->dataset
@@ -21,8 +22,8 @@ void MyFourierClass::forward_fft(int bins) {
     // TODO: test if dataset is intitialized first.
     // TEMPORARY: get first dimension from this for testing. 
     double* col = myhelpers::getColFromMatrix(dataset, 0);
-    
-    int num_rows = 10001;
+
+    int num_rows = 6000;
 
     this->prev_output = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * num_rows);
 
@@ -34,15 +35,61 @@ void MyFourierClass::forward_fft(int bins) {
     fftw_destroy_plan(p);
 
 };
+/// <summary>
+/// Finds top terms(k) harmonics with highest amplitdue in the frequency specturm. 
+/// </summary>
+/// <param name="freq_spect">out from fft should not include complex conjugate</param>
+/// <param name="L">must be even, should not include complex conjugate</param>
+/// <param name="terms"></param>
+/// <param name="out_inds"></param>
+void MyFourierClass::findTopKHarms(fftw_complex* freq_spect, int L, int terms, int* out_inds) {
+
+}
 
 /// <summary>
 /// Calculates the fourier series representation of a frequency spectrum using the largest "terms" amplitudes in the spectrum.
-/// TODO: maybe look into using linear algebra library to speed this up. 
+/// Define outputs like this: 
+/// <code>
+/// double** out_cos = new double* [terms];
+/// double** out_sin = new double* [terms];
+/// Cleanup must be handled elsewhere !
+/// </code>
 /// </summary>
 /// <param name="freq_spect">output from fft</param>
 /// <param name="terms">number of terms to reconstruct with.</param>
-void MyFourierClass::fourier_series(fftw_complex* freq_spect, int terms) {
+
+void MyFourierClass::fourier_series(fftw_complex* freq_spect, int terms, int L, double** out_sin, double ** out_cos) {
     using namespace std::complex_literals;
+    int Fs = 3000; // TODO: Make sample rate and other info a member of MyFourierClass
+    // Find strongest k amplitudes in freq_spect.
+    std::complex<double>* freq_spect_cmplx = myhelpers::fftw_complex2std_complex(freq_spect, L);
+
+    std::vector<double> amp(L); // amplitude vector
+    for (int i = 0; i < L; i++) {
+        amp[i] = 2 * std::abs(freq_spect_cmplx[i] / L); // = 2.*|freq_spec(1:L/2)./L|
+    }
+
+    std::vector<int> harms_idx = myhelpers::maxk(amp, terms); // indicies of top harmonics
+
+    // Extract component waves.
+     // TODO: Remeber to delete this using a loop.
+    
+    std::vector<double> t(L * 2); // timestep vector
+    std::generate(t.begin(), t.end(), [Fs]() { static int i = 0;  return ((1.0/Fs) * (double)i++ ); });
+    
+
+    for (int i = 0; i < harms_idx.size(); i++) {
+        int k = harms_idx[i];
+        double fr = (k - 1) * (Fs / L);
+        double pr = 2 * M_PI * fr;
+
+      //  out_cos[i]= //real(2 * yf(k) / L) * cos(w * t);
+    }
+
+
+
+
+
    /*
     double Fs = 10001; // sampel rate Hz
     double L = 1000; // # of samples.
@@ -91,7 +138,7 @@ void MyFourierClass::inverse_fft(int terms) {
 // Load the dataset to be Fourier transfomred into this->dataset.
 void MyFourierClass::load_from_csv(std::string file_dir) {
     const int num_cols = 1;
-    const int num_rows = 10001;
+    const int num_rows = 6000;
     this->dataset.resize(num_rows,num_cols); //TODO: get size from file (put a header at the top of thecsv  file).
 
     std::ifstream file(file_dir);

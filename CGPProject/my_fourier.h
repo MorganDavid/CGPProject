@@ -4,19 +4,19 @@ using namespace boost::numeric::ublas;
 
 class MyFourierClass {
     matrix<double> dataset; // Stores the matrix to be Fourier transformed.
-    fftw_complex* prev_output = 0; // The answer to the last completed fourier calculation.
-    double* inverse_output = 0;
+    fftw_complex* prev_output; // The answer to the last completed fourier calculation.
+    double* inverse_output;
 public:
     virtual ~MyFourierClass() {
-        fftw_free(prev_output);
+        
         std::cout << " destroyed " << std::endl;
     };
 
     void forward_fft(int);
+    void findTopKHarms(fftw_complex* freq_spect, int L, int terms, int* out_inds);
+    void fourier_series(fftw_complex* freq_spect, int terms, int L, double** out_sin, double** out_cos);
     void inverse_fft(int);
-
-    void fourier_series(fftw_complex*, int);
-
+    
     void load_from_csv(std::string file_dir);
 
     inline fftw_complex* get_prev_output() {
