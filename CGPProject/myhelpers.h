@@ -9,10 +9,10 @@ namespace myhelpers {
 	const char* error_list[] = { "Bad File","error2" };
 
 	template<class M>
-	M* getColFromMatrix(matrix<M> data,int x) {
-		M* out = new M[data.size1()];
+	std::vector<M> getColFromMatrix(const matrix<M> data, const size_t x) { // TODO: maybe remove boost library and just use pointer matricies. 
+		std::vector<M> out(data.size1());
+		if (x > data.size1()) { throw "ERROR: x columns do not exist in m."; }
 		for (int i = 0; i < data.size1(); ++i) {
-			if (x > data.size1()) { throw "ERROR: x columns do not exist in m."; }
 			out[i] = data(i,x);
 		}
 		return out;
@@ -24,8 +24,8 @@ namespace myhelpers {
 	/// <param name="in"></param>
 	/// <param name="length"></param>
 	/// <returns></returns>
-	std::complex<double>* fftw_complex2std_complex(fftw_complex* in, int length) {
-		std::complex<double>* out = new std::complex<double>[length];
+	std::vector<std::complex<double>> fftw_complex2std_complex(const fftw_complex* in, const size_t length) {
+		std::vector<std::complex<double>> out(length);
 		for (int i = 0; i < length; i++) {
 			out[i] = std::complex<double>(in[i][0], in[i][1]);
 		}
