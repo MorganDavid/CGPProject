@@ -514,6 +514,13 @@ DLL_EXPORT void setArity(struct parameters *params, int arity);
 */
 DLL_EXPORT void setMu(struct parameters *params, int mu);
 
+/*
+	Function: setInitChromo
+	
+	Sets the chromosome to intialise the population with. 
+*/
+DLL_EXPORT void setInitChromo(struct parameters* params, struct chromosome *initChromo);
+
 
 /*
 	Function: setLambda

@@ -68,6 +68,7 @@ struct parameters {
 	void (*reproductionScheme)(struct parameters *params, struct chromosome **parents, struct chromosome **children, int numParents, int numChildren);
 	char reproductionSchemeName[REPRODUCTIONSCHEMENAMELENGTH];
 	int numThreads;
+	struct chromosome* initChromo; // If this is non NULL, initialise the population with copies of this chromo, not random generation.
 };
 
 struct chromosome {
@@ -263,6 +264,8 @@ DLL_EXPORT struct parameters *initialiseParameters(const int numInputs, const in
 	strncpy(params->reproductionSchemeName, "mutateRandomParent", REPRODUCTIONSCHEMENAMELENGTH);
 
 	params->numThreads = 1;
+
+	params->initChromo = NULL;
 
 	/* Seed the random number generator */
 	srand(time(NULL));
@@ -579,6 +582,11 @@ DLL_EXPORT void setMu(struct parameters *params, int mu) {
 	}
 }
 
+DLL_EXPORT void setInitChromo(struct parameters* params, struct chromosome *initChromo) {
+	if (initChromo != NULL) { // TODO: probably want other checks here but idk
+		params->initChromo = initChromo;
+	}
+}
 
 /*
 	Sets the lambda value in given parameters to the new given value.
@@ -812,6 +820,11 @@ DLL_EXPORT struct chromosome *initialiseChromosome(struct parameters *params) {
 
 	struct chromosome *chromo;
 	int i;
+
+	/* If we are loading a chromosome from params */
+	if (params->initChromo != NULL) {
+		return (params->initChromo);
+	}
 
 	/* check that funcSet contains functions */
 	if (params->funcSet->numFunctions < 1) {
