@@ -1,0 +1,2 @@
+complex-300pts is this function https://www.desmos.com/calculator/zlxnnoggsu
+Sample rate is 300hz, use higher sample rate next time. 

@@ -1,16 +1,20 @@
 #include "fftw3.h"
 #include "fstream"
-#include <boost/numeric/ublas/matrix.hpp>
-using namespace boost::numeric::ublas;
+#include <complex>
+
+template<class M>
+struct myMatrix {// remeber to set height width and size. 
+    M** data=nullptr;
+    size_t height=0;
+    size_t width=0;
+};
 
 class MyFourierClass {
-    matrix<double> dataset; // Stores the matrix to be Fourier transformed. TODO: change this to use pointer matrix not boost.
-    double Fs = 3000;
+    myMatrix<double> dataset; // Stores the matrix to be Fourier transformed. TODO: change this to use pointer matrix not boost.
+    double Fs; //  sample rate 
 public:
-    virtual ~MyFourierClass() {
-        
-        std::cout << " destroyed " << std::endl;
-    };
+    MyFourierClass(double Fs) : Fs{ Fs } {};
+    virtual ~MyFourierClass() {};
 
     void forward_fft(const int bins, const size_t L, fftw_complex* out) const;
     void fourier_series(const fftw_complex* freq_spect, const int terms, const size_t L, double** out_sin, double** out_cos) const;
@@ -20,11 +24,11 @@ public:
 
     void load_from_csv(const std::string file_dir);
 
-    
+    static void extract_harmonics(std::string file_dir, double Fs, int terms, double** synthesized);
 
     //Template functions have to be inline (i think)
     template<class T>
-    inline void write_to_csv(const char* file_dir, T** arr, int width, int height) const {
+    inline void write_to_csv(const char* file_dir, T** arr, const int width, const int height) const {
         std::ofstream out(file_dir);
 
         for (int r = 0; r < height; r++) {
@@ -39,7 +43,7 @@ public:
     */
     //Template functions have to be inline (i think)
     template<class T>
-    inline void write_to_csv(const char* file_dir, const T * const arr, const int L) const {
+    inline void write_to_csv_1d(const char* file_dir, const T * const arr, const int L) const {
         std::ofstream out(file_dir);
 
         for (int r = 0; r < L; r++) {

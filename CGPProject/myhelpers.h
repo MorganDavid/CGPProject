@@ -1,19 +1,18 @@
 #include <iostream>
 #include <string>
-#include <boost/numeric/ublas/matrix.hpp>
 #include <limits>
 #include <vector>
 #include <numeric>
-using namespace boost::numeric::ublas;
+#include <algorithm>
+
 namespace myhelpers {
 	const char* error_list[] = { "Bad File","error2" };
 
 	template<class M>
-	std::vector<M> getColFromMatrix(const matrix<M> data, const size_t x) { // TODO: maybe remove boost library and just use pointer matricies. 
-		std::vector<M> out(data.size1());
-		if (x > data.size1()) { throw "ERROR: x columns do not exist in m."; }
-		for (int i = 0; i < data.size1(); ++i) {
-			out[i] = data(i,x);
+	std::vector<M> getColFromMatrix(myMatrix<M> mat, const size_t x) { 
+		std::vector<M> out(mat.height);
+		for (int i = 0; i < mat.height; ++i) {
+			out.push_back(mat.data[i][x]);
 		}
 		return out;
 	}
@@ -46,6 +45,7 @@ namespace myhelpers {
 		std::iota(inds.begin(), inds.end(), i++); // = range (0:arr.end()).
 		std::sort(inds.begin(), inds.end(), [&] (int x, int y) {return arr[x] < arr[y]; }); // compare elements of arr, not inds. returns indicies instead.
 		std::vector<int> sliced(inds.end() - k, inds.end() );
+		std::reverse(sliced.begin(), sliced.end());
 		return sliced;
 	}
 

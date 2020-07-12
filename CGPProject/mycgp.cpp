@@ -17,6 +17,8 @@ void cgpWrapper::harmonic_runCGP() {
     int numGens = 10000;
     int updateFrequency = 500;
     double targetFitness = 0.1;
+    int fourier_terms = 5;
+    double** out_synth = new double* [fourier_terms];
 
     params = initialiseParameters(numInputs, numNodes, numOutputs, nodeArity);
 
@@ -28,10 +30,9 @@ void cgpWrapper::harmonic_runCGP() {
 
     printParameters(params);
 
+
     trainingData = initialiseDataSetFromFile("complex-300pnts.csv"); // function in https://www.desmos.com/calculator/zlxnnoggsu
     int dssize = getNumDataSetSamples(trainingData);
-
-
 
     chromo = runCGP(params, trainingData, numGens);
     setInitChromo(params, chromo);
@@ -50,7 +51,6 @@ void cgpWrapper::harmonic_runCGP() {
     }
 
     out.close();
-
 
     system("gnuplot -e \"set datafile separator comma; \
             set terminal jpeg; \
