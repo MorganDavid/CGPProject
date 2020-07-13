@@ -12,19 +12,14 @@
 #include <cmath>
 #include <complex>
 
-/*
- NOTE: All data which goes into this class must have EVEN LENGTH in the first dimension.
- L shoudl always be hte legnth of the original signal.
-*/
-
 /// <summary>
 /// Computes forward fourier transform on this->dataset
 /// </summary>
 /// <returns>Frequency spectrum as fftw_complex* is put into this->prev_output</returns>
-void MyFourierClass::forward_fft(const int bins, const size_t L, fftw_complex* out) const {
+void MyFourierClass::forward_fft(const int bins, const size_t L, myMatrix<double> dataset, fftw_complex* out) {
     // TODO: test if dataset is intitialized first.
     // TEMPORARY: get first dimension from this for testing. 
-    std::vector<double> col = myhelpers::getColFromMatrix(this->dataset, 1);
+    std::vector<double> col = myhelpers::getColFromMatrix(dataset, 1);
 
     fftw_plan p;
     p = fftw_plan_dft_r2c_1d(L, &col[0], out, FFTW_ESTIMATE);
@@ -33,7 +28,6 @@ void MyFourierClass::forward_fft(const int bins, const size_t L, fftw_complex* o
 
     //for (int i = 0; i < 10; i++) std::cout << prev_output[i][0] << "+"<< prev_output[i][1]<< std::endl;
     fftw_destroy_plan(p);
-
 };
 
 /// <summary>
@@ -48,7 +42,7 @@ void MyFourierClass::forward_fft(const int bins, const size_t L, fftw_complex* o
 /// <param name="freq_spect">output from fft</param>
 /// <param name="terms">number of terms to reconstruct with.</param>
 /// TODO: I think this code produces the output flipped/backwards for some reason. 
-void MyFourierClass::fourier_series(const fftw_complex* freq_spect, const int terms, const size_t L, double** out_sin, double** out_cos) const {
+void MyFourierClass::fourier_series(const fftw_complex* freq_spect, const int terms, const double Fs, const size_t L, double** out_sin, double** out_cos) {
     // -- Find strongest k amplitudes in freq_spect --
     std::vector<std::complex<double>> freq_spect_cmplx = myhelpers::fftw_complex2std_complex(freq_spect, L/2);
 
@@ -67,13 +61,13 @@ void MyFourierClass::fourier_series(const fftw_complex* freq_spect, const int te
     // -- Extract component waves --
     for (int i = harms_idx.size() - 1; i >= 0;  i--) {
         int k = harms_idx[i];
-        double pr = 2 * M_PI * (k * (double)(this->Fs / L));
+        double pr = 2 * M_PI * (k * (double)(Fs / L));
 
         out_cos[i] = new double[L];
         out_sin[i] = new double[L];
 
         for (int x = 0; x < L; x++) {
-            double t = 1.0 / this->Fs * x;
+            double t = 1.0 / Fs * x;
             double cos_ans = (double)((2.0 * freq_spect_cmplx[k] / (double)L).real() * cos(pr * t));  //real(2*yf(k)/L)*cos(w*t(x));
             double sin_ans = (double)((2.0 * freq_spect_cmplx[k] / (double)L).imag() * sin(pr * t));
             out_cos[i][x] = cos_ans;
@@ -86,7 +80,7 @@ void MyFourierClass::fourier_series(const fftw_complex* freq_spect, const int te
 /// </summary>
 /// <param name="out_synthesis">Must be initialized with first dimension size `terms`. Indexing out_synthesis[0] will give you the result of the fourier series with 1 harmonic,
 /// out_synthesis[1] will give you the result with 2 harmonics and so on up to `terms`.</param>
-void MyFourierClass::synthesise_from_waves(const int terms, const size_t L,const double*const* sin_mat, const double* const * cos_mat, double** out_synthesis) const {
+void MyFourierClass::synthesise_from_waves(const int terms, const size_t L,const double*const* sin_mat, const double* const * cos_mat, double** out_synthesis) {
     for (int t = 1; t < terms+1; t++){
         out_synthesis[t-1] = new double[L]();
         for (int i = 0; i < t; i++) {
@@ -96,6 +90,7 @@ void MyFourierClass::synthesise_from_waves(const int terms, const size_t L,const
             }
         }
     }
+    
 
 }
 
@@ -159,6 +154,13 @@ void MyFourierClass::load_from_csv(const std::string file_dir) {
     this->dataset.width = num_cols;
 }
 
+// Converts from the cgp library dataset to myMatrix. 
+void MyFourierClass::setDatasetFromCGP(struct dataSet* data)
+{
+    this->dataset.data = data->outputData;
+    this->dataset.height = data->numSamples;
+    this->dataset.width = data->numOutputs;
+};
 
 /// <summary>
 /// 
@@ -167,23 +169,20 @@ void MyFourierClass::load_from_csv(const std::string file_dir) {
 /// <param name="Fs"></param>
 /// <param name="terms"></param>
 /// <param name="out_synth"> allocate with  `double** out_synth = new double* [terms];`</param>
-void MyFourierClass::extract_harmonics(std::string file_dir, double Fs, int terms, double** out_synth)
+void MyFourierClass::execute_extract_harmonics(int terms)
 {
-    MyFourierClass f(Fs);
-
-    f.load_from_csv(file_dir);
-    int L = f.dataset.height;
+    int L = this->dataset.height;
     double** out_cos = new double* [terms];
     double** out_sin = new double* [terms];
 
-    fftw_complex* freq_spec = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * L / 2);
+    execute_forward_fft(L);
 
-    f.forward_fft(L, L, freq_spec);
+    fourier_series(this->freq_spect, terms, this->Fs, L, out_sin, out_cos);
 
-    f.fourier_series(freq_spec, terms, L, out_sin, out_cos);
+    this->execute_synthesise_from_waves(terms, out_sin, out_cos);
+};
 
-    f.synthesise_from_waves(terms, L, out_sin, out_cos, out_synth);
+void MyFourierClass::getWithHarmonics(int term) {
 
-}
-;
+};
 #endif

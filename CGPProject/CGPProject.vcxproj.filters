@@ -44,6 +44,9 @@
     <ClInclude Include="myhelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="dataSetDeclaration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\Google Drive\_University (Notts)\Semester 2\GP\auto-mpg-edit.csv">

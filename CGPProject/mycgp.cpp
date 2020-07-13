@@ -2,17 +2,18 @@
 #include <iostream>
 #include <fstream>
 #include "mycgp.h"
+#include "my_fourier.h"
 
 void cgpWrapper::harmonic_runCGP() {
     struct parameters* params = NULL;
-    struct dataSet* trainingData = NULL;
+    struct dataSet* original_data = NULL;
     struct chromosome* chromo = NULL;
 
     int numInputs = 1;
     int numNodes = 15;
     int numOutputs = 1;
     int nodeArity = 2;
-    int harmonics = 5;
+    int harmonics_count = 5;
 
     int numGens = 10000;
     int updateFrequency = 500;
@@ -31,12 +32,19 @@ void cgpWrapper::harmonic_runCGP() {
     printParameters(params);
 
 
-    trainingData = initialiseDataSetFromFile("complex-300pnts.csv"); // function in https://www.desmos.com/calculator/zlxnnoggsu
-    int dssize = getNumDataSetSamples(trainingData);
+    original_data = initialiseDataSetFromFile("complex-300pnts.csv"); // function in https://www.desmos.com/calculator/zlxnnoggsu
+    int dssize = getNumDataSetSamples(original_data);
+    
+    dataSet trainingDataRef(*original_data);
+    dataSet* trainingData = &trainingDataRef;
+
+    MyFourierClass f(300, original_data);
+    f.execute_extract_harmonics(harmonics_count);
+    
 
     chromo = runCGP(params, trainingData, numGens);
     setInitChromo(params, chromo);
-    for (int i = 0; i < harmonics; ++i) {
+    for (int i = 0; i < harmonics_count; ++i) {
         chromo = runCGP(params, trainingData, numGens);
         setInitChromo(params, chromo);
     }

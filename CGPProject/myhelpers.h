@@ -12,7 +12,7 @@ namespace myhelpers {
 	std::vector<M> getColFromMatrix(myMatrix<M> mat, const size_t x) { 
 		std::vector<M> out(mat.height);
 		for (int i = 0; i < mat.height; ++i) {
-			out.push_back(mat.data[i][x]);
+			out[i]=(mat.data[i][x]);
 		}
 		return out;
 	}
@@ -45,7 +45,7 @@ namespace myhelpers {
 		std::iota(inds.begin(), inds.end(), i++); // = range (0:arr.end()).
 		std::sort(inds.begin(), inds.end(), [&] (int x, int y) {return arr[x] < arr[y]; }); // compare elements of arr, not inds. returns indicies instead.
 		std::vector<int> sliced(inds.end() - k, inds.end() );
-		std::reverse(sliced.begin(), sliced.end());
+		std::reverse(sliced.begin(), sliced.end()); //  make it descending order
 		return sliced;
 	}
 
@@ -65,5 +65,10 @@ namespace myhelpers {
 		{
 			std::cout << error_list[e] << " extra info: " + extra + " " << std::endl;;
 		}
+	}
+
+	void copyCGPdataSet(struct dataSet from, struct dataSet to) {
+		//Allocate new arrays
+		
 	}
 }

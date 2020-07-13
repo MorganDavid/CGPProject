@@ -27,6 +27,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cgp.h" />
+    <ClInclude Include="dataSetDeclaration.h" />
     <ClInclude Include="mycgp.h" />
     <ClInclude Include="myhelpers.h" />
     <ClInclude Include="my_fourier.h" />
