@@ -192,7 +192,11 @@ double** getInputFromDataSet(struct dataSet*);
 */
 struct results;
 
-
+/*
+My class which holds all information about the harmonic component of the CGP run. 
+*/
+struct harmonicRunResults;
+struct harmonicRunParameters;
 
 /*
 	Title: Parameters Functions
@@ -1688,6 +1692,12 @@ DLL_EXPORT void saveResults(struct results *rels, char const *fileName);
 DLL_EXPORT struct chromosome* getChromosome(struct results *rels, int run);
 
 /*
+Gets the best chromosome out of ALL of the results structures CGP runs. 
+*/
+DLL_EXPORT struct chromosome* getBestChromosomeFromResults(struct results* rels);
+
+
+/*
 	Function: getNumChromosomes
 		Gets number of chromosomes stored in the given results structure.
 
@@ -1800,10 +1810,20 @@ DLL_EXPORT double getAverageGenerations(struct results *rels);
 */
 DLL_EXPORT double getMedianGenerations(struct results *rels);
 
+/*
+	Harmonic stuff
+*/
+
+DLL_EXPORT struct harmonicRunResults* initialiseharmonicRunResults(int numPeriods, int numGens, int updateFreq);
+DLL_EXPORT struct parameters* setHarmonicRunParamaters(struct parameters *params, int numPeriods, int currentPeriod, struct dataSet* originalDataset);
+DLL_EXPORT double** getHarmonicFitnessFromParams(struct parameters* params);
+DLL_EXPORT double** getRealFitnessFromParams(struct parameters* params);
+DLL_EXPORT struct parameters* setHarmonicRunResultsInit(struct parameters* params, int numPeriods, int numGens, int updateFreq);
 
 /*
 	Title: CGP Functions
 */
+
 
 /*
 	Function: runCGP
@@ -1892,6 +1912,7 @@ DLL_EXPORT struct chromosome* runCGP(struct parameters *params, struct dataSet *
 		<runCGP>, <initialiseParameters>, <initialiseDataSetFromFile>, <freeResults>
 */
 DLL_EXPORT struct results* repeatCGP(struct parameters *params, struct dataSet *data, int numGens, int numRuns);
+
 
 
 /*

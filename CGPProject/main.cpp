@@ -4,12 +4,13 @@
 #include "fftw3.h"
 
 int main() {
-    MyFourierClass f(300,"complex-300pnts.csv");
+  /*  MyFourierClass f(300,"complex-300pnts.csv");
 
     f.execute_extract_harmonics(5);
 
     f.write_harmonics_to_csv("harmonics");
-    /*const int terms = 8;
+
+    const int terms = 8;
     const int L = 300;
     double** out_cos = new double* [terms];
     double** out_sin = new double* [terms];
@@ -47,5 +48,5 @@ int main() {
 
 
 
-    //cgpWrapper::harmonic_runCGP();
+    cgpWrapper::my_runCGP();
 }

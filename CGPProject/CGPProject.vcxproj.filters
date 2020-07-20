@@ -15,9 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="cgp.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -30,11 +27,14 @@
     <ClCompile Include="mycgp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cgp_harms.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cgp_library_extension.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cgp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="mycgp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -45,6 +45,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="dataSetDeclaration.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cgp_harms.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

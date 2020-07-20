@@ -19,7 +19,7 @@
 void MyFourierClass::forward_fft(const int bins, const size_t L, myMatrix<double> dataset, fftw_complex* out) {
     // TODO: test if dataset is intitialized first.
     // TEMPORARY: get first dimension from this for testing. 
-    std::vector<double> col = myhelpers::getColFromMatrix(dataset, 1);
+    std::vector<double> col = myhelpers::getColFromMatrix(dataset, 0);
 
     fftw_plan p;
     p = fftw_plan_dft_r2c_1d(L, &col[0], out, FFTW_ESTIMATE);
@@ -51,7 +51,7 @@ void MyFourierClass::fourier_series(const fftw_complex* freq_spect, const int te
         double abbed = std::abs(freq_spect_cmplx[i]);
         amp[i] = 2 * abbed / (L); // = 2.*|freq_spec(1:L/2)./L|
     }
-    write_to_csv_1d("amp_spec.csv", &amp[0], (int)L/2);
+    //write_to_csv_1d("amp_spec.csv", &amp[0], (int)L/2);
 
     std::vector<int> harms_idx = myhelpers::maxk(amp, terms); // indicies of top harmonics
 
@@ -73,6 +73,9 @@ void MyFourierClass::fourier_series(const fftw_complex* freq_spect, const int te
             out_cos[i][x] = cos_ans;
             out_sin[i][x] = sin_ans;
         }
+        // This code produces the spectrums backwards. Don't know why, reverse to fix.
+        std::reverse(out_cos[i], out_cos[i] + L);
+        std::reverse(out_sin[i], out_sin[i] + L);
     }
 }
 /// <summary>
@@ -154,16 +157,23 @@ void MyFourierClass::load_from_csv(const std::string file_dir) {
     this->dataset.width = num_cols;
 }
 
-// Converts from the cgp library dataset to myMatrix. 
+// Converts from the cgp library dataset to myMatrix using copy. 
 void MyFourierClass::setDatasetFromCGP(struct dataSet* data)
 {
-    this->dataset.data = data->outputData;
     this->dataset.height = data->numSamples;
     this->dataset.width = data->numOutputs;
+    this->dataset.data = new double*[this->dataset.height];
+    for (int i = 0; i < this->dataset.height; i++) {
+        this->dataset.data[i] = new double [this->dataset.width];
+        for (int x = 0; x < this->dataset.width; x++) {
+
+            this->dataset.data[i][x]=data->outputData[i][x];
+        }
+    }
 };
 
 /// <summary>
-/// 
+/// Allows the getharmonic function to be run to get harmonics from the dataset in this object. 
 /// </summary>
 /// <param name="file_dir"></param>
 /// <param name="Fs"></param>
@@ -180,9 +190,16 @@ void MyFourierClass::execute_extract_harmonics(int terms)
     fourier_series(this->freq_spect, terms, this->Fs, L, out_sin, out_cos);
 
     this->execute_synthesise_from_waves(terms, out_sin, out_cos);
+}
+/// <summary>
+/// Only run this after `execute_extract_harmonics`. Gets synthesis with `num_harmonics` from the harmonics_output.
+/// </summary>
+/// <param name="num_harmonics"></param>
+/// <returns></returns>
+std::vector<double> MyFourierClass::getSynthesisWithHarmonics(int num_harmonics)
+{
+    std::vector<double> out(harmonic_output.data[num_harmonics - 1], harmonic_output.data[num_harmonics - 1]+harmonic_output.width);
+    return out;
 };
 
-void MyFourierClass::getWithHarmonics(int term) {
-
-};
 #endif

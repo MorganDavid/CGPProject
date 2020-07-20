@@ -24,7 +24,7 @@
 #include <float.h>
 
 
-#include "cgp.h"
+#include "cgp_harms.h"
 
 #pragma warning(disable : 4996) // Morgan added this, prevents errors about using strcopy etc.
 
@@ -68,7 +68,15 @@ struct parameters {
 	void (*reproductionScheme)(struct parameters *params, struct chromosome **parents, struct chromosome **children, int numParents, int numChildren);
 	char reproductionSchemeName[REPRODUCTIONSCHEMENAMELENGTH];
 	int numThreads;
-	struct chromosome* initChromo; // If this is non NULL, initialise the population with copies of this chromo, not random generation.
+
+	/* Harmonics stuff */ 
+	//If harmonicRunParameters is nonnull, then we are doing a harmonic run. 
+
+	 // If this is non NULL, initialise the population with copies of this chromo, not random generation.
+	// params obj is NOT responsible for initChromo
+	struct chromosome* initChromo;
+	struct harmonicRunResults* harmonicRunResults; // Stores results when running in harmonic mode. 
+	struct harmonicRunParameters* harmonicRunParamters;
 };
 
 struct chromosome {
@@ -104,6 +112,16 @@ struct functionSet {
 	double (*functions[FUNCTIONSETSIZE])(const int numInputs, const double *inputs, const double *connectionWeights);
 };
 
+struct harmonicRunResults {
+	double** harmonicFitness;
+	double** realFitness;
+};
+
+struct harmonicRunParameters {
+	int numPeriods;
+	int currentPeriod;
+	struct dataSet* rawDataset;//Raw dataset. Doesnt' get fourier transformed. Use for real fitness.	
+};
 
 struct dataSet {
 	int numSamples;
@@ -263,9 +281,12 @@ DLL_EXPORT struct parameters *initialiseParameters(const int numInputs, const in
 	params->reproductionScheme = mutateRandomParent;
 	strncpy(params->reproductionSchemeName, "mutateRandomParent", REPRODUCTIONSCHEMENAMELENGTH);
 
-	params->numThreads = 1;
+	params->numThreads = 1; 
 
+	/* Harmonic stuff */
 	params->initChromo = NULL;
+	params->harmonicRunResults = NULL;
+	params->harmonicRunParamters = NULL;
 
 	/* Seed the random number generator */
 	srand(time(NULL));
@@ -285,7 +306,8 @@ DLL_EXPORT void freeParameters(struct parameters *params) {
 		return;
 	}
 
-	free(params->funcSet);
+	free(params->funcSet);  
+	//TODO: free my two new structs. 
 	free(params);
 }
 
@@ -821,9 +843,10 @@ DLL_EXPORT struct chromosome *initialiseChromosome(struct parameters *params) {
 	struct chromosome *chromo;
 	int i;
 
-	/* If we are loading a chromosome from params */
+	/* If we are not on the first period we initialise the population from params */
 	if (params->initChromo != NULL) {
-		return (params->initChromo);
+		chromo = initialiseChromosomeFromChromosome(params->initChromo);
+		return chromo;
 	}
 
 	/* check that funcSet contains functions */
@@ -846,6 +869,9 @@ DLL_EXPORT struct chromosome *initialiseChromosome(struct parameters *params) {
 
 	/* allocate memory for chromosome outputValues */
 	chromo->outputValues = (double*)malloc(params->numOutputs * sizeof(double));
+
+	/* used interally when exicuting chromosome */
+	chromo->nodeInputsHold = (double*)malloc(params->arity * sizeof(double));
 
 	/* Initialise each of the chromosomes nodes */
 	for (i = 0; i < params->numNodes; i++) {
@@ -875,9 +901,6 @@ DLL_EXPORT struct chromosome *initialiseChromosome(struct parameters *params) {
 
 	/* set the active nodes in the newly generated chromosome */
 	setChromosomeActiveNodes(chromo);
-
-	/* used interally when exicuting chromosome */
-	chromo->nodeInputsHold = (double*)malloc(params->arity * sizeof(double));
 
 	return chromo;
 }
@@ -1789,6 +1812,15 @@ DLL_EXPORT void setChromosomeFitness(struct parameters *params, struct chromosom
 	chromo->fitness = fitness;
 }
 
+DLL_EXPORT double getChromosomeRealFitness(struct parameters* params, struct chromosome* chromo, struct dataSet* data) {
+	double fitness;
+
+	setChromosomeActiveNodes(chromo);
+
+	resetChromosome(chromo);
+
+	return params->fitnessFunction(params, chromo, data);
+}
 
 /*
 	reset the output values of all chromosome nodes to zero
@@ -2610,8 +2642,19 @@ DLL_EXPORT struct chromosome* getChromosome(struct results *rels, int run) {
 	return chromo;
 }
 
-
-
+//Gets the best chromosome out of all the runs from the results structure
+DLL_EXPORT struct chromosome* getBestChromosomeFromResults(struct results* rels) {
+	double best_fitness = INFINITY;
+	int best_fitness_idx = -1;
+	for (int i = 0; i < rels->numRuns; i++) {
+		double fitness = getChromosome(rels,i)->fitness;
+		if (fitness < best_fitness) {
+			best_fitness = fitness;
+			best_fitness_idx = i;
+		}
+	}
+	return getChromosome(rels,best_fitness_idx);
+}
 
 
 /*
@@ -2986,6 +3029,50 @@ DLL_EXPORT struct results* repeatCGP(struct parameters *params, struct dataSet *
 }
 
 
+DLL_EXPORT double** getHarmonicFitnessFromParams(struct parameters* params) {
+	return params->harmonicRunResults->harmonicFitness;
+}
+
+DLL_EXPORT double** getRealFitnessFromParams(struct parameters* params) {
+	return params->harmonicRunResults->realFitness;
+}
+DLL_EXPORT struct parameters* setHarmonicRunParamaters(struct parameters *params, int numPeriods, int currentPeriod, struct dataSet* originalDataset) {
+	struct harmonicRunParameters* harmonicRunParams = (struct harmonicRunParameters*)malloc(sizeof(struct harmonicRunParameters));
+	harmonicRunParams->numPeriods = numPeriods;
+	harmonicRunParams->currentPeriod = currentPeriod;
+	params->harmonicRunParamters=harmonicRunParams;
+	params->harmonicRunParamters->rawDataset = originalDataset;
+	return params;
+}
+
+/* 
+Initialise space for harmonic results. 
+numGens is the number of gens in each period. 
+numGens/updateFreq MUST be integer.
+*/
+DLL_EXPORT struct harmonicRunResults* initialiseharmonicRunResults(int numPeriods, int numGens, int updateFreq) {
+	if (numGens % updateFreq != 0) { printf("ERROR: updateFreq must be integer multiple of numGens when running harmonic mode, was %d",(numGens/updateFreq)); exit(0); }
+	
+	struct harmonicRunResults* harmonicRunResults = (struct harmonicRunResults*)malloc(sizeof(struct harmonicRunResults));
+	
+	//Harmonic fitness and real fitness are matrices of dimensions numGens x numPeriods
+	harmonicRunResults->harmonicFitness = (double**) malloc(numPeriods * sizeof(double*));
+
+	harmonicRunResults->realFitness = (double**) malloc(numPeriods * sizeof(double*));;
+	int x = (int)  numGens / updateFreq;
+	for (int i = 0; i < numPeriods; i++) {
+		harmonicRunResults->harmonicFitness[i] = (double*)malloc(x * sizeof(double));
+		harmonicRunResults->realFitness[i] = (double*)malloc(x * sizeof(double));
+	}
+
+	return harmonicRunResults;
+}
+// 
+DLL_EXPORT struct parameters* setHarmonicRunResultsInit(struct parameters* params, int numPeriods, int numGens, int updateFreq) {
+	params->harmonicRunResults = initialiseharmonicRunResults(numPeriods, numGens, updateFreq);
+	return(params);
+}
+
 DLL_EXPORT struct chromosome* runCGP(struct parameters *params, struct dataSet *data, int numGens) {
 
 	int i;
@@ -3066,7 +3153,7 @@ DLL_EXPORT struct chromosome* runCGP(struct parameters *params, struct dataSet *
 		printf("\n-- Starting CGP --\n\n");
 		printf("Gen\tfitness\n");
 	}
-
+	
 	/* for each generation */
 	for (gen = 0; gen < numGens; gen++) {
 
@@ -3089,11 +3176,25 @@ DLL_EXPORT struct chromosome* runCGP(struct parameters *params, struct dataSet *
 			break;
 		}
 
+		/* Write chromo fitness to params every generation.*/
+
+
 		/* display progress to the user at the update frequency specified */
-		if (params->updateFrequency != 0 && (gen % params->updateFrequency == 0 || gen >= numGens - 1) ) {
+		if (params->updateFrequency != 0 && (gen % (params->updateFrequency)*2 == 0 || gen >= numGens - 1) ) {
 			printf("%d\t%f\n", gen, bestChromo->fitness);
 		}
+		//Update results parameter
+		// gen / frequency works since gen must be integer multiple of updatefreq
+		if (params->harmonicRunParamters != NULL && gen % params->updateFrequency == 0) {
+			int row = params->harmonicRunParamters->currentPeriod;
+			int col =  gen / params->updateFrequency;
+			(params->harmonicRunResults->harmonicFitness)[row][col] = bestChromo->fitness;
 
+			// Calculate real fitness
+			double realFitness = getChromosomeRealFitness(params, bestChromo, params->harmonicRunParamters->rawDataset);
+			(params->harmonicRunResults->realFitness)[row][col] = realFitness;
+
+ 		}
 		/*
 			Set the chromosomes which will be used by the selection scheme
 			dependant upon the evolutionary strategy. i.e. '+' all are used
@@ -3544,9 +3645,10 @@ static double _constZero(const int numInputs, const double *inputs, const double
 
 /*
 	Node function one.  Always returns PI
+	STUPID MORGAN: this is now 2pi
 */
 static double _constPI(const int numInputs, const double *inputs, const double *connectionWeights) {
-	return 3.1415926535; // Morgan - used to be M_PI, undeclared
+	return 2*3.1415926535; // Morgan - used to be M_PI, undeclared
 }
 
 
