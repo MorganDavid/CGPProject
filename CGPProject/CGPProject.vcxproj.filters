@@ -33,6 +33,9 @@
     <ClCompile Include="cgp_library_extension.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="my_struct_definitions.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mycgp.h">
@@ -42,9 +45,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="myhelpers.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="dataSetDeclaration.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="cgp_harms.h">

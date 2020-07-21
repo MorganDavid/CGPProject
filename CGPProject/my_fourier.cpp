@@ -11,6 +11,7 @@
 #include "myhelpers.h"
 #include <cmath>
 #include <complex>
+#include "my_struct_definitions.c"
 
 /// <summary>
 /// Computes forward fourier transform on this->dataset

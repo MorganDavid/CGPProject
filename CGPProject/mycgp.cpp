@@ -2,33 +2,40 @@
 #include <fstream>
 #include "mycgp.h"
 #include "my_fourier.h"
+#include "my_struct_definitions.c"
 
-void cgpWrapper::harmonic_runCGP() {
-    struct parameters* params = NULL;
+struct parameters* cgpWrapper::params=NULL;
 
+void cgpWrapper::initializeParams() {
     int numInputs = 1;
     int numNodes = 20;
     int numOutputs = 1;
     int nodeArity = 2;
-    const int harmonics_count = 5;
+    const int harmonics_count = 3;
 
-    int numGens = 5000;
-    int updateFrequency = 20;
+    int updateFrequency = 20; // must be integer multiple of myNumGens
     double targetFitness = 0.1;
-    int fourier_terms = 5;
+    int fourier_terms = 3;
     double** out_synth = new double* [fourier_terms];
 
     params = initialiseParameters(numInputs, numNodes, numOutputs, nodeArity);
 
-    addNodeFunction(params, "rand,add,mul,pi,sin,cos");
+    addNodeFunction(params, "1,div,add,mul,pi,sin,cos");
 
     setTargetFitness(params, targetFitness);
-
+    setLambda(params, 5);
     setUpdateFrequency(params, updateFrequency);
-
+    setNumThreads(params, 4);
     printParameters(params);
+    params->myNumGens = 5000;
+    params->myNumRepeats = 5;
 
-    setHarmonicRunResultsInit(params, harmonics_count, numGens, updateFrequency);
+    setHarmonicRunParamaters(params, harmonics_count, 0, nullptr);
+    setHarmonicRunResultsInit(params, harmonics_count, 30000, updateFrequency);
+}
+
+void cgpWrapper::harmonic_runCGP() {
+    const int harmonics_count = params->harmonicRunParamters->numPeriods;
 
     struct dataSet* original_data = initialiseDataSetFromFile("complex-300pnts.csv"); // function in https://www.desmos.com/calculator/zlxnnoggsu
     struct dataSet* trainingData = initialiseDataSetFromFile("complex-300pnts.csv");
@@ -38,115 +45,39 @@ void cgpWrapper::harmonic_runCGP() {
     MyFourierClass f(dssize, trainingData);
     f.execute_extract_harmonics(harmonics_count);
 
-    struct chromosome* best_chromos[harmonics_count] = { NULL };
+    struct chromosome** best_chromos = new struct chromosome*[harmonics_count]();// () initilizes to 0    
 
-    for (int i = 1; i < 2; i++) {
+    for (int i = 1; i <= harmonics_count; i++) {
         // Update trainingData with harmonic data instead.  
-        std::vector<double> x = f.getSynthesisWithHarmonics(i);
-        replaceCGPdataSetCol(trainingData, x, 0);
-
+         std::vector<double> x = f.getSynthesisWithHarmonics(i);
+         replaceCGPdataSetCol(trainingData, x, 0);
+         if (i == 3) params->myNumGens = 30000;
         //Run CGP on the updated dataset
         setHarmonicRunParamaters(params, harmonics_count, i - 1, original_data);
-        best_chromos[i - 1] = runCGP(params, trainingData, numGens);
+        best_chromos[i - 1] = my_runCGP(trainingData);
         setInitChromo(params, best_chromos[i - 1]);
+        writeAndPlot(best_chromos[i - 1], trainingData, "plot_" + std::to_string(i));
         std::cout << "Finished Harmonic " << std::endl;
     }
-    MyFourierClass::write_to_csv<double>("realfitness", getRealFitnessFromParams(params), numGens / updateFrequency, harmonics_count);
-    MyFourierClass::write_to_csv<double>("harmonicfitness", getHarmonicFitnessFromParams(params), numGens / updateFrequency, harmonics_count);
 
-    std::ofstream out("predictions.csv");
-    for (int i = 0; i < dssize; i++) {
-        const double one_input = getDataSetSampleInput(trainingData, i, 0);
-        const double arr[] = { one_input };
-        executeChromosome(best_chromos[0], arr);
-        out << one_input << "," << (getChromosomeOutput(best_chromos[0], 0)) << "," << getDataSetSampleOutput(trainingData, i, 0) << "," << std::endl;
-
-    }
-
-    out.close();
-
-    system("gnuplot -e \"set datafile separator comma; \
-            set terminal jpeg; \
-            plot \\\"predictions.csv\\\" using ($1):($2) title \\\"Prediction\\\" with lines,\
-            \\\"predictions.csv\\\" using ($1):($3) title \\\"True\\\" with lines;\" > \"results.jpeg\"\"");
-
-    printChromosome(best_chromos[0], 0);
+    MyFourierClass::write_to_csv<double>("realfitness", getRealFitnessFromParams(params), params->myNumGens / params->updateFrequency, harmonics_count);
+    MyFourierClass::write_to_csv<double>("harmonicfitness", getHarmonicFitnessFromParams(params), params->myNumGens / params->updateFrequency, harmonics_count);
 
     freeDataSet(trainingData);
     for (int i = 0; i < harmonics_count; i++) {
-        if (best_chromos[i] != NULL) {
+        if (best_chromos[i] != 0) {
             freeChromosome(best_chromos[i]);
         }
     }
     freeParameters(params);
 }
 
-struct chromosome* cgpWrapper::my_runCGP() {
-    struct parameters* params = NULL;
-    struct dataSet* trainingData = NULL;
-    struct chromosome* chromo = NULL;
-
-    int numInputs = 1;
-    int numNodes = 10;
-    int numOutputs = 1;
-    int nodeArity = 2;
-
-    int numGens = 10000;
-    int updateFrequency = 500;
-    double targetFitness = 0.1;
-    int numRepeats = 2;
-
-    params = initialiseParameters(numInputs, numNodes, numOutputs, nodeArity);
-
-    addNodeFunction(params, "add,pi,mul,sin,1");
-
-    setTargetFitness(params, targetFitness);
-
-    setUpdateFrequency(params, updateFrequency);
-    setMutationRate(params, 0.2);
-    printParameters(params);
-    setNumThreads(params, 4);
-    trainingData = initialiseDataSetFromFile("complex-300pnts.csv"); // function in https://www.desmos.com/calculator/zlxnnoggsu
-    int dssize = getNumDataSetSamples(trainingData);
-
-    MyFourierClass f(dssize, trainingData);
-    f.execute_extract_harmonics(5);
-
-    std::vector<double> x = f.getSynthesisWithHarmonics(1);
-    replaceCGPdataSetCol(trainingData, x, 0);
-    std::ofstream myfile("trainingData.csv");
-    for (int n = 0; n < x.size(); n++)
-    {
-        myfile << trainingData->outputData[n][0] << std::endl;
-    }
-
-    struct results* rels;
-    
+struct chromosome* cgpWrapper::my_runCGP(struct dataSet* trainingData) {
     //Do cgp
-    rels = repeatCGP(params, trainingData, numGens, numRepeats);
-    struct chromosome* best_chromo = getBestChromosomeFromResults(rels);
-
-    std::ofstream out("predictions.csv");
-    for (int i = 0; i < dssize; i++) {
-        const double one_input = getDataSetSampleInput(trainingData, i, 0);
-        const double arr[] = { one_input };
-        executeChromosome(best_chromo, arr);
-        out << one_input << "," << (getChromosomeOutput(best_chromo, 0)) << "," << getDataSetSampleOutput(trainingData, i, 0) << "," << std::endl;
-    }
-
-    out.close();
-
-
-    system("gnuplot -e \"set datafile separator comma; \
-            set terminal jpeg; \
-            plot \\\"predictions.csv\\\" using ($1):($2) title \\\"Prediction\\\" with lines,\
-            \\\"predictions.csv\\\" using ($1):($3) title \\\"True\\\" with lines;\" > \"results.jpeg\"\"");
+    struct chromosome* best_chromo = getBestChromosomeFromResults(repeatCGP(params, trainingData, params->myNumGens, params->myNumRepeats));
 
     printChromosome(best_chromo, 0);
 
-    freeDataSet(trainingData);
-    freeResults(rels);
-    freeParameters(params);
     return best_chromo;
 }
 
@@ -163,3 +94,22 @@ void cgpWrapper::replaceCGPdataSetCol(dataSet* trainingData, const std::vector<d
     }
 }
 
+void cgpWrapper::writeAndPlot(struct chromosome* chromo, struct dataSet* data, std::string filename) {
+    std::string old_filename = filename;
+    filename = filename+".csv";
+    std::ofstream out(filename);
+    for (int i = 0; i < data->numSamples; i++) {
+        const double one_input = getDataSetSampleInput(data, i, 0);
+        const double arr[] = { one_input };
+        executeChromosome(chromo, arr);
+        out << one_input << "," << (getChromosomeOutput(chromo, 0)) << "," << getDataSetSampleOutput(data, i, 0) << "," << std::endl;
+    }
+
+    out.close();
+    std::string one   ("gnuplot -e \"set datafile separator comma; set terminal jpeg; plot \\\"");
+    std::string two   ("\\\" using ($1):($2) title \\\"Prediction\\\" with lines,\\\"");
+    std::string three ("\\\" using ($1):($3) title \\\"True\\\" with lines;\" > \"");
+    std::string four  (old_filename+ ".jpeg\\\"\"");
+    std::string cmd   (one+filename+two+filename+three+four);
+    system            (cmd.c_str());
+}

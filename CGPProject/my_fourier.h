@@ -1,7 +1,6 @@
 #include "fftw3.h"
 #include "fstream"
 #include <complex>
-#include "dataSetDeclaration.h"
 #include <vector>
 /*
  NOTE: All data which goes into this class must have EVEN LENGTH in the first dimension.
@@ -60,7 +59,7 @@ public:
     //Template functions have to be inline (i think)
     template<class T>
     static inline void write_to_csv(std::string file_dir, T** arr, const int width, const int height) {
-        std::ofstream out(file_dir + ".out");
+        std::ofstream out(file_dir + ".csv");
 
         for (int r = 0; r < height; r++) {
             for (int c = 0; c < width; c++)

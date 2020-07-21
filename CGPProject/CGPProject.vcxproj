@@ -25,10 +25,10 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mycgp.cpp" />
     <ClCompile Include="my_fourier.cpp" />
+    <ClCompile Include="my_struct_definitions.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="cgp_harms.h" />
-    <ClInclude Include="dataSetDeclaration.h" />
     <ClInclude Include="mycgp.h" />
     <ClInclude Include="myhelpers.h" />
     <ClInclude Include="my_fourier.h" />

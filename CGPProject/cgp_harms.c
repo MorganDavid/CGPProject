@@ -23,7 +23,7 @@
 #include <math.h>
 #include <float.h>
 
-
+#include "my_struct_definitions.c"
 #include "cgp_harms.h"
 
 #pragma warning(disable : 4996) // Morgan added this, prevents errors about using strcopy etc.
@@ -33,114 +33,12 @@
 	and the names of various functions.
 	(could make the function set size dynamic)
 */
-#define FUNCTIONSETSIZE 50
-#define FUNCTIONNAMELENGTH 11
-#define FITNESSFUNCTIONNAMELENGTH 21
-#define MUTATIONTYPENAMELENGTH 21
-#define SELECTIONSCHEMENAMELENGTH 21
-#define REPRODUCTIONSCHEMENAMELENGTH 21
+
 
 /*
 	Structure definitions
 */
-
-struct parameters {
-	int mu;
-	int lambda;
-	char evolutionaryStrategy;
-	double mutationRate;
-	double recurrentConnectionProbability;
-	double connectionWeightRange;
-	int numInputs;
-	int numNodes;
-	int numOutputs;
-	int arity;
-	struct functionSet *funcSet;
-	double targetFitness;
-	int updateFrequency;
-	int shortcutConnections;
-	void (*mutationType)(struct parameters *params, struct chromosome *chromo);
-	char mutationTypeName[MUTATIONTYPENAMELENGTH];
-	double (*fitnessFunction)(struct parameters *params, struct chromosome *chromo, struct dataSet *dat);
-	char fitnessFunctionName[FITNESSFUNCTIONNAMELENGTH];
-	void (*selectionScheme)(struct parameters *params, struct chromosome **parents, struct chromosome **candidateChromos, int numParents, int numCandidateChromos);
-	char selectionSchemeName[SELECTIONSCHEMENAMELENGTH];
-	void (*reproductionScheme)(struct parameters *params, struct chromosome **parents, struct chromosome **children, int numParents, int numChildren);
-	char reproductionSchemeName[REPRODUCTIONSCHEMENAMELENGTH];
-	int numThreads;
-
-	/* Harmonics stuff */ 
-	//If harmonicRunParameters is nonnull, then we are doing a harmonic run. 
-
-	 // If this is non NULL, initialise the population with copies of this chromo, not random generation.
-	// params obj is NOT responsible for initChromo
-	struct chromosome* initChromo;
-	struct harmonicRunResults* harmonicRunResults; // Stores results when running in harmonic mode. 
-	struct harmonicRunParameters* harmonicRunParamters;
-};
-
-struct chromosome {
-	int numInputs;
-	int numOutputs;
-	int numNodes;
-	int numActiveNodes;
-	int arity;
-	struct node **nodes;
-	int *outputNodes;
-	int *activeNodes;
-	double fitness;
-	double *outputValues;
-	struct functionSet *funcSet;
-	double *nodeInputsHold;
-	int generation;
-};
-
-struct node {
-	int function;
-	int *inputs;
-	double *weights;
-	int active;
-	double output;
-	int maxArity;
-	int actArity;
-};
-
-struct functionSet {
-	int numFunctions;
-	char functionNames[FUNCTIONSETSIZE][FUNCTIONNAMELENGTH];
-	int maxNumInputs[FUNCTIONSETSIZE];
-	double (*functions[FUNCTIONSETSIZE])(const int numInputs, const double *inputs, const double *connectionWeights);
-};
-
-struct harmonicRunResults {
-	double** harmonicFitness;
-	double** realFitness;
-};
-
-struct harmonicRunParameters {
-	int numPeriods;
-	int currentPeriod;
-	struct dataSet* rawDataset;//Raw dataset. Doesnt' get fourier transformed. Use for real fitness.	
-};
-
-struct dataSet {
-	int numSamples;
-	int numInputs;
-	int numOutputs;
-	double **inputData;
-	double **outputData;
-};
-
-//morgan added
-
-double** getInputFromDataSet(struct dataSet* ds) {
-	return (ds->inputData);
-}
-
-struct results {
-	int numRuns;
-	struct chromosome **bestChromosomes;
-};
+// Moved struct definitions to my_struct_definitions.c for compatibility with external code. 
 
 
 /*
@@ -3001,7 +2899,7 @@ DLL_EXPORT struct results* repeatCGP(struct parameters *params, struct dataSet *
 	int updateFrequency = params->updateFrequency;
 
 	/* set the update frequency so as to to so generational results */
-	params->updateFrequency = 0;
+	//params->updateFrequency = 0;
 
 	rels = initialiseResults(params, numRuns);
 
@@ -3064,7 +2962,7 @@ DLL_EXPORT struct harmonicRunResults* initialiseharmonicRunResults(int numPeriod
 		harmonicRunResults->harmonicFitness[i] = (double*)malloc(x * sizeof(double));
 		harmonicRunResults->realFitness[i] = (double*)malloc(x * sizeof(double));
 	}
-
+	
 	return harmonicRunResults;
 }
 // 
@@ -3180,12 +3078,13 @@ DLL_EXPORT struct chromosome* runCGP(struct parameters *params, struct dataSet *
 
 
 		/* display progress to the user at the update frequency specified */
-		if (params->updateFrequency != 0 && (gen % (params->updateFrequency)*2 == 0 || gen >= numGens - 1) ) {
+		// don't print if using repititions. 
+		if (!(params->myNumRepeats>0) && ( params->updateFrequency != 0 && (gen % (params->updateFrequency * 10) == 0 || gen >= numGens - 1) )) {
 			printf("%d\t%f\n", gen, bestChromo->fitness);
 		}
 		//Update results parameter
 		// gen / frequency works since gen must be integer multiple of updatefreq
-		if (params->harmonicRunParamters != NULL && gen % params->updateFrequency == 0) {
+		if (params->harmonicRunParamters != 0 && gen % params->updateFrequency == 0) {
 			int row = params->harmonicRunParamters->currentPeriod;
 			int col =  gen / params->updateFrequency;
 			(params->harmonicRunResults->harmonicFitness)[row][col] = bestChromo->fitness;

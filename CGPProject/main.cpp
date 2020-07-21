@@ -47,6 +47,7 @@ int main() {
     //delete[] out_synth;
 
 
-
-    cgpWrapper::my_runCGP();
+    cgpWrapper::initializeParams();
+    cgpWrapper::harmonic_runCGP();
+   // cgpWrapper::my_runCGP(initialiseDataSetFromFile("complex-300pnts.csv"));
 }

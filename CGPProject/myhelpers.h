@@ -66,9 +66,4 @@ namespace myhelpers {
 			std::cout << error_list[e] << " extra info: " + extra + " " << std::endl;;
 		}
 	}
-
-	void copyCGPdataSet(struct dataSet from, struct dataSet to) {
-		//Allocate new arrays
-		
-	}
 }
