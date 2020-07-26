@@ -6,39 +6,77 @@
 
 struct parameters* cgpWrapper::params=NULL;
 
+double cgpWrapper::MSE(struct parameters* params, struct chromosome* chromo, struct dataSet* data) {
+
+    int i, j;
+    double error = 0;
+
+    /* error checking */
+    if (getNumChromosomeInputs(chromo) != getNumDataSetInputs(data)) {
+        printf("Error: the number of chromosome inputs must match the number of inputs specified in the dataSet.\n");
+        printf("Terminating CGP-Library.\n");
+        exit(0);
+    }
+
+    if (getNumChromosomeOutputs(chromo) != getNumDataSetOutputs(data)) {
+        printf("Error: the number of chromosome outputs must match the number of outputs specified in the dataSet.\n");
+        printf("Terminating CGP-Library.\n");
+        exit(0);
+    }
+
+    /* for each sample in data */
+    for (i = 0; i < getNumDataSetSamples(data); i++) {
+
+        /* calculate the chromosome outputs for the set of inputs  */
+        executeChromosome(chromo, getDataSetSampleInputs(data, i));
+
+        /* for each chromosome output */
+        for (j = 0; j < getNumChromosomeOutputs(chromo); j++) {
+
+            error += pow(getChromosomeOutput(chromo, j) - getDataSetSampleOutput(data, i, j),2);
+        }
+    }
+    error /= getNumDataSetSamples(data);
+    return error;
+}
+
 void cgpWrapper::initializeParams() {
     int numInputs = 1;
-    int numNodes = 20;
+    int numNodes = 18;
     int numOutputs = 1;
     int nodeArity = 2;
     const int harmonics_count = 3;
 
     int updateFrequency = 20; // must be integer multiple of myNumGens
-    double targetFitness = 0.1;
+    double targetFitness = 0.001;
     int fourier_terms = 3;
     double** out_synth = new double* [fourier_terms];
 
     params = initialiseParameters(numInputs, numNodes, numOutputs, nodeArity);
 
-    addNodeFunction(params, "1,div,add,mul,pi,sin,cos");
+    addNodeFunction(params, "add,mul,pi,sin,cos,rand");
+
+    setCustomFitnessFunction(params, MSE, "MSE");
 
     setTargetFitness(params, targetFitness);
-    setLambda(params, 5);
+   // setLambda(params, 4);
+   // setMu(params, 1);
     setUpdateFrequency(params, updateFrequency);
+    setMutationRate(params, 0.6);
     setNumThreads(params, 4);
     printParameters(params);
-    params->myNumGens = 5000;
-    params->myNumRepeats = 5;
+    params->myNumGens = 10000;
+    params->myNumRepeats = 3;
 
     setHarmonicRunParamaters(params, harmonics_count, 0, nullptr);
-    setHarmonicRunResultsInit(params, harmonics_count, 30000, updateFrequency);
+    setHarmonicRunResultsInit(params, harmonics_count, 50000, updateFrequency);
 }
 
-void cgpWrapper::harmonic_runCGP() {
+void cgpWrapper::harmonic_runCGP(std::string filename) {
     const int harmonics_count = params->harmonicRunParamters->numPeriods;
 
-    struct dataSet* original_data = initialiseDataSetFromFile("complex-300pnts.csv"); // function in https://www.desmos.com/calculator/zlxnnoggsu
-    struct dataSet* trainingData = initialiseDataSetFromFile("complex-300pnts.csv");
+    struct dataSet* original_data = initialiseDataSetFromFile(filename.c_str()); // function in https://www.desmos.com/calculator/zlxnnoggsu
+    struct dataSet* trainingData = initialiseDataSetFromFile(filename.c_str());
 
     int dssize = getNumDataSetSamples(trainingData);
 
@@ -47,11 +85,11 @@ void cgpWrapper::harmonic_runCGP() {
 
     struct chromosome** best_chromos = new struct chromosome*[harmonics_count]();// () initilizes to 0    
 
-    for (int i = 1; i <= harmonics_count; i++) {
+    //Runs on all harmnonics except the last one. 
+    for (int i = 1; i < harmonics_count; i++) {
         // Update trainingData with harmonic data instead.  
          std::vector<double> x = f.getSynthesisWithHarmonics(i);
          replaceCGPdataSetCol(trainingData, x, 0);
-         if (i == 3) params->myNumGens = 30000;
         //Run CGP on the updated dataset
         setHarmonicRunParamaters(params, harmonics_count, i - 1, original_data);
         best_chromos[i - 1] = my_runCGP(trainingData);
@@ -59,6 +97,12 @@ void cgpWrapper::harmonic_runCGP() {
         writeAndPlot(best_chromos[i - 1], trainingData, "plot_" + std::to_string(i));
         std::cout << "Finished Harmonic " << std::endl;
     }
+
+    // Finally, run on original data
+    params->myNumGens = 100000;
+    setHarmonicRunParamaters(params, harmonics_count, harmonics_count-1, trainingData);
+    best_chromos[harmonics_count - 1] = my_runCGP(original_data);
+    writeAndPlot(best_chromos[harmonics_count - 1], original_data, "plot_final");
 
     MyFourierClass::write_to_csv<double>("realfitness", getRealFitnessFromParams(params), params->myNumGens / params->updateFrequency, harmonics_count);
     MyFourierClass::write_to_csv<double>("harmonicfitness", getHarmonicFitnessFromParams(params), params->myNumGens / params->updateFrequency, harmonics_count);
@@ -77,7 +121,7 @@ struct chromosome* cgpWrapper::my_runCGP(struct dataSet* trainingData) {
     struct chromosome* best_chromo = getBestChromosomeFromResults(repeatCGP(params, trainingData, params->myNumGens, params->myNumRepeats));
 
     printChromosome(best_chromo, 0);
-
+    writeAndPlot(best_chromo, trainingData, "singlerun");
     return best_chromo;
 }
 

@@ -22,7 +22,13 @@ public:
 
     void setDatasetFromCGP(struct dataSet* data);
     void load_from_csv(const std::string file_dir);
-
+    
+    // These functions get the coefficients which represent the three parts of each wave.
+    // up to the num_harmonics. your responsibility to pick sensible number for num_harmonics.
+    std::vector<double> getAmplitudeList(int num_harmonics);
+    std::vector<double> getFrequencyList(int num_harmonics);
+    std::vector<double> getPhaseList(int num_harmonics);
+    
     MyFourierClass(double _Fs, dataSet* _dataset) :Fs{ _Fs } { // TODO: this doesn't load the datset
         this->setDatasetFromCGP(_dataset);
         this->freq_spect = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * dataset.height);
@@ -96,13 +102,17 @@ public:
 private:
     myMatrix<double> dataset; // Stores the matrix to be Fourier transformed.
     double Fs; //  sample rate 
-    myMatrix<double> harmonic_output;
-    fftw_complex* freq_spect;
+    myMatrix<double> harmonic_output; // each row is one harmonic. 
+    fftw_complex* freq_spect; // keep this representation for inverse_fft.
+
+    // contains lists of wave parameters. use myhelpers::maxk on amplitudeList to get the most important ones. 
+    std::vector<double> amplitudeList;
+    std::vector<double> phaseList;
+    std::vector<std::complex<double>> frequencyList; // Same as freq_spect but stored less stupidly 
+    
 
     static void forward_fft(const int bins, const size_t L, myMatrix<double> dataset, fftw_complex* out);
-    inline void execute_forward_fft(int bins) {
-        forward_fft(bins, this->dataset.height, this->dataset, this->freq_spect);
-    };
+    inline void execute_forward_fft(int bins);
 
     static void fourier_series(const fftw_complex* freq_spect, const int terms, const double Fs, const size_t L, double** out_sin, double** out_cos);
 
@@ -115,6 +125,7 @@ private:
     };
 
     void inverse_fft(const int terms, fftw_complex* input, double* output) const;
+   
 
 
 };

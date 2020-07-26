@@ -4,13 +4,11 @@
 
 #include "fftw3.h"
 #include <iostream>
-#include <fstream>
 #include <sstream>
 #include <string>
 #include "my_fourier.h"
 #include "myhelpers.h"
 #include <cmath>
-#include <complex>
 #include "my_struct_definitions.c"
 
 /// <summary>
@@ -27,9 +25,14 @@ void MyFourierClass::forward_fft(const int bins, const size_t L, myMatrix<double
 
     fftw_execute(p);
 
-    //for (int i = 0; i < 10; i++) std::cout << prev_output[i][0] << "+"<< prev_output[i][1]<< std::endl;
     fftw_destroy_plan(p);
-};
+}
+inline void MyFourierClass::execute_forward_fft(int bins)
+{
+    forward_fft(bins, this->dataset.height, this->dataset, this->freq_spect);
+    this->frequencyList = myhelpers::fftw_complex2std_complex(this->freq_spect, this->dataset.height);
+}
+;
 
 /// <summary>
 /// Calculates the fourier series representation of a frequency spectrum using the largest "terms" amplitudes in the spectrum.
@@ -44,6 +47,7 @@ void MyFourierClass::forward_fft(const int bins, const size_t L, myMatrix<double
 /// <param name="terms">number of terms to reconstruct with.</param>
 /// TODO: I think this code produces the output flipped/backwards for some reason. 
 void MyFourierClass::fourier_series(const fftw_complex* freq_spect, const int terms, const double Fs, const size_t L, double** out_sin, double** out_cos) {
+
     // -- Find strongest k amplitudes in freq_spect --
     std::vector<std::complex<double>> freq_spect_cmplx = myhelpers::fftw_complex2std_complex(freq_spect, L/2);
 

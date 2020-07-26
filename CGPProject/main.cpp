@@ -48,6 +48,6 @@ int main() {
 
 
     cgpWrapper::initializeParams();
-    cgpWrapper::harmonic_runCGP();
-   // cgpWrapper::my_runCGP(initialiseDataSetFromFile("complex-300pnts.csv"));
+    cgpWrapper::harmonic_runCGP("ez_mode_sinwaves.csv");
+   // cgpWrapper::my_runCGP(initialiseDataSetFromFile("ez_mode_sinwaves.csv"));
 }
