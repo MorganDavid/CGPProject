@@ -4,11 +4,13 @@
 
 #include "fftw3.h"
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include "my_fourier.h"
 #include "myhelpers.h"
 #include <cmath>
+#include <complex>
 #include "my_struct_definitions.c"
 
 /// <summary>
@@ -17,22 +19,17 @@
 /// <returns>Frequency spectrum as fftw_complex* is put into this->prev_output</returns>
 void MyFourierClass::forward_fft(const int bins, const size_t L, myMatrix<double> dataset, fftw_complex* out) {
     // TODO: test if dataset is intitialized first.
-    // TEMPORARY: get first dimension from this for testing. 
-    std::vector<double> col = myhelpers::getColFromMatrix(dataset, 0);
+    // TEMPORARY: get first dimension from this for testing.
+    std::vector<double> col = myhelpers::getColFromMatrix(dataset, 1);
 
     fftw_plan p;
     p = fftw_plan_dft_r2c_1d(L, &col[0], out, FFTW_ESTIMATE);
 
     fftw_execute(p);
 
+    //for (int i = 0; i < 10; i++) std::cout << prev_output[i][0] << "+"<< prev_output[i][1]<< std::endl;
     fftw_destroy_plan(p);
-}
-inline void MyFourierClass::execute_forward_fft(int bins)
-{
-    forward_fft(bins, this->dataset.height, this->dataset, this->freq_spect);
-    this->frequencyList = myhelpers::fftw_complex2std_complex(this->freq_spect, this->dataset.height);
-}
-;
+};
 
 /// <summary>
 /// Calculates the fourier series representation of a frequency spectrum using the largest "terms" amplitudes in the spectrum.
@@ -46,16 +43,11 @@ inline void MyFourierClass::execute_forward_fft(int bins)
 /// <param name="freq_spect">output from fft</param>
 /// <param name="terms">number of terms to reconstruct with.</param>
 /// TODO: I think this code produces the output flipped/backwards for some reason. 
-void MyFourierClass::fourier_series(const fftw_complex* freq_spect, const int terms, const double Fs, const size_t L, double** out_sin, double** out_cos) {
-
+void MyFourierClass::fourier_series(const std::vector<std::complex<double>> freq_spect_cmplx, const std::vector<double> amplitudeList, const int terms, const double Fs, const size_t L, double** out_sin, double** out_cos) {
     // -- Find strongest k amplitudes in freq_spect --
-    std::vector<std::complex<double>> freq_spect_cmplx = myhelpers::fftw_complex2std_complex(freq_spect, L/2);
+   // std::vector<std::complex<double>> freq_spect_cmplx = myhelpers::fftw_complex2std_complex(freq_spect, L/2);
 
-    std::vector<double> amp(L/2); // amplitude vector
-    for (int i = 0; i < L/2; i++) {
-        double abbed = std::abs(freq_spect_cmplx[i]);
-        amp[i] = 2 * abbed / (L); // = 2.*|freq_spec(1:L/2)./L|
-    }
+    std::vector<double> amp(amplitudeList);
     //write_to_csv_1d("amp_spec.csv", &amp[0], (int)L/2);
 
     std::vector<int> harms_idx = myhelpers::maxk(amp, terms); // indicies of top harmonics
@@ -99,7 +91,15 @@ void MyFourierClass::synthesise_from_waves(const int terms, const size_t L,const
         }
     }
     
+}
 
+std::vector<double> MyFourierClass::calculate_amplitude_list(std::vector<std::complex<double>> freq_spect) {
+    std::vector<double> amp(freq_spect.size()); // amplitude vector
+    for (int i = 0; i < freq_spect.size(); i++) {
+        double abbed = std::abs(freq_spect[i]);
+        amp[i] = 2 * abbed / (freq_spect.size()); // = 2.*|freq_spec(1:L/2)./L|
+    }
+    return amp; 
 }
 
 /// <summary>
@@ -191,11 +191,14 @@ void MyFourierClass::execute_extract_harmonics(int terms)
     double** out_sin = new double* [terms];
 
     execute_forward_fft(L);
-
-    fourier_series(this->freq_spect, terms, this->Fs, L, out_sin, out_cos);
+    this->frequencyList = myhelpers::fftw_complex2std_complex(this->freq_spect, L / 2);
+    this->amplitudeList = calculate_amplitude_list(frequencyList);
+    //TODO: add phase here
+    fourier_series(this->frequencyList, this->amplitudeList, terms, this->Fs, L, out_sin, out_cos);
 
     this->execute_synthesise_from_waves(terms, out_sin, out_cos);
 }
+
 /// <summary>
 /// Only run this after `execute_extract_harmonics`. Gets synthesis with `num_harmonics` from the harmonics_output.
 /// </summary>
