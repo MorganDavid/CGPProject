@@ -50,6 +50,9 @@
     <ClInclude Include="cgp_harms.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="mymatrix.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\..\..\Google Drive\_University (Notts)\Semester 2\GP\auto-mpg-edit.csv">

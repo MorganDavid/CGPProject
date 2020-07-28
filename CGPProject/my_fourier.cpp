@@ -8,10 +8,10 @@
 #include <sstream>
 #include <string>
 #include "my_fourier.h"
-#include "myhelpers.h"
 #include <cmath>
 #include <complex>
 #include "my_struct_definitions.c"
+#include "myhelpers.h"
 
 /// <summary>
 /// Computes forward fourier transform on this->dataset
@@ -20,7 +20,7 @@
 void MyFourierClass::forward_fft(const int bins, const size_t L, myMatrix<double> dataset, fftw_complex* out) {
     // TODO: test if dataset is intitialized first.
     // TEMPORARY: get first dimension from this for testing.
-    std::vector<double> col = myhelpers::getColFromMatrix(dataset, 1);
+    std::vector<double> col = myhelpers::getColFromMatrix(dataset, 0);
 
     fftw_plan p;
     p = fftw_plan_dft_r2c_1d(L, &col[0], out, FFTW_ESTIMATE);
@@ -140,7 +140,7 @@ void MyFourierClass::load_from_csv(const std::string file_dir) {
         std::getline(file, line);
 
         if (!file.good()) {
-            myhelpers::handleError(0, file_dir + " at row " + std::to_string(r));
+            std::cout<< (file_dir + " at row " + std::to_string(r))<<std::endl;
             break;
         }
 
@@ -151,7 +151,7 @@ void MyFourierClass::load_from_csv(const std::string file_dir) {
             std::string v;
             std::getline(iss, v, ',');
             if (!iss.good()) {
-                myhelpers::handleError(0, (file_dir + " at " + std::to_string(r) + "," + std::to_string(c)));
+                std::cout << (file_dir + " at " + std::to_string(r) + "," + std::to_string(c))<<std::endl;
                 break;
             }
             std::stringstream ss(v);

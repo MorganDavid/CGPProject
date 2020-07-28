@@ -3,6 +3,7 @@
 #include "mycgp.h"
 #include "my_fourier.h"
 #include "my_struct_definitions.c"
+#include "myhelpers.h"
 
 struct parameters* cgpWrapper::params=NULL;
 
@@ -57,7 +58,7 @@ void cgpWrapper::initializeParams() {
     addNodeFunction(params, "add,mul,pi,sin,cos,rand");
 
     setCustomFitnessFunction(params, MSE, "MSE");
-
+    
     setTargetFitness(params, targetFitness);
    // setLambda(params, 4);
    // setMu(params, 1);
@@ -82,7 +83,8 @@ void cgpWrapper::harmonic_runCGP(std::string filename) {
 
     MyFourierClass f(dssize, trainingData);
     f.execute_extract_harmonics(harmonics_count);
-
+    struct dataSet* dsWithExtraInputs = nullptr;
+    constructDataset(3, original_data, f.get_amplitude_list(), f.get_frequency_list(), dsWithExtraInputs);
     struct chromosome** best_chromos = new struct chromosome*[harmonics_count]();// () initilizes to 0    
 
     //Runs on all harmnonics except the last one. 
@@ -157,3 +159,43 @@ void cgpWrapper::writeAndPlot(struct chromosome* chromo, struct dataSet* data, s
     std::string cmd   (one+filename+two+filename+three+four);
     system            (cmd.c_str());
 }
+/// <summary>
+/// 
+/// </summary>
+/// <param name="k"> number of harmoncis to add into the CGP inputs. </param>
+/// <param name="data"></param>
+/// <param name="amplitudeList"></param>
+/// <param name="frequencyList"></param>
+/// <param name="outData"></param>
+void cgpWrapper::constructDataset( const int k, struct dataSet* data, std::vector<double> amplitudeList, std::vector<std::complex<double>> frequencyList, struct dataSet* outData ) {
+    if (k <= 0) {
+        outData = data;
+        return;
+    }
+    
+    //get maxk amplitudes
+    std::vector<int> maxInds = myhelpers::maxk(amplitudeList, k);
+    
+    double** inputs = new double*[data->numSamples];
+    int newNumInputs = data->numInputs + 1+k*3; // *3 because we are storing 3 extra inputs into each sample. 
+    
+    for (int i = 0; i < data->numSamples; i++) {
+        // Space for the two new inputs.
+        inputs[i] = new double[newNumInputs];
+        // Fill existing inputs into outData
+        for (int x = 0; x < data->numInputs; x++) {
+            inputs[i][x] = data->inputData[i][x];
+        }
+        // Add two new inputs
+
+        for (int y = 0; y < k; y++) {
+            inputs[i][data->numInputs + y] = frequencyList[maxInds[y]].imag(); 
+            inputs[i][data->numInputs + y + 3] = amplitudeList[maxInds[y]];
+            inputs[i][data->numInputs + y + 6] = frequencyList[maxInds[y]].real();
+        }
+
+    }
+
+    outData = initialiseDataSetFromArrays(newNumInputs, data->numOutputs, data->numSamples, inputs[0], data->outputData[0]);
+    saveDataSet(outData, "ds_with_Fourier_info.csv");
+}   

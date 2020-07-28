@@ -6,7 +6,6 @@
 #define FITNESSFUNCTIONNAMELENGTH 21
 #define SELECTIONSCHEMENAMELENGTH 21
 #define REPRODUCTIONSCHEMENAMELENGTH 21
-
 struct parameters {
 	int mu;
 	int lambda;

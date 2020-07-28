@@ -2,18 +2,12 @@
 #include "fstream"
 #include <complex>
 #include <vector>
+#include "mymatrix.h"
+
 /*
  NOTE: All data which goes into this class must have EVEN LENGTH in the first dimension.
  Class object must be destroyed and reinstantiated every time you want to run on new data otherweise it will leak memory.
 */
-
-template<class M>
-class myMatrix {// remeber to set height width and size. 
-public: 
-    M** data=nullptr;
-    size_t height=0;
-    size_t width=0;
-};
 
 class MyFourierClass {
 public:
@@ -73,6 +67,7 @@ public:
     Csv writes for 1d arrays
     */
     //Template functions have to be inline (i think)
+    //TODO: see if there's a less stupid way to have all these similar functions in one function. 
     template<class T>
     static inline void write_to_csv_1d(const char* file_dir, const T* const arr, const int L) {
         std::ofstream out(file_dir);
@@ -82,7 +77,7 @@ public:
         }
         out.close();
     };
-
+   
     //TODO: make a new implementation of this to generalize to any type with tostring ability. 
     static inline void write_to_csv(const char* file_dir, fftw_complex* arr, const int L) {
         std::ofstream out(file_dir);
