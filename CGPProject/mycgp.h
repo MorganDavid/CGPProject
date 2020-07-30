@@ -12,5 +12,5 @@ public:
 private:
     static void replaceCGPdataSetCol(dataSet* trainingData,const std::vector<double> x,const int col);
     static void writeAndPlot(chromosome* chromo, dataSet* data, std::string filename);
-    static void constructDataset(const int k, dataSet* data, std::vector<double> amplitudeList, std::vector<std::complex<double>> frequencyList, dataSet* outData);
+	static  dataSet* constructDataSetWithWaveProperties(const int k, dataSet* data, std::vector<double> amplitudeList, std::vector<std::complex<double>> frequencyList);
 };

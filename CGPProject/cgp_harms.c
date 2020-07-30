@@ -2000,7 +2000,40 @@ DLL_EXPORT struct dataSet *initialiseDataSetFromArrays(int numInputs, int numOut
 
 	return data;
 }
+/*
+	Same as the above, except the inputs to this function should be nested heap matrices. 
+*/
+DLL_EXPORT struct dataSet* initialiseDataSetFromMatrix(int numInputs, int numOutputs, int numSamples, double** inputs, double** outputs) {
 
+	int i, j;
+	struct dataSet* data;
+
+	/* initialise memory for data structure */
+	data = (struct dataSet*)malloc(sizeof(struct dataSet));
+
+	data->numInputs = numInputs;
+	data->numOutputs = numOutputs;
+	data->numSamples = numSamples;
+
+	data->inputData = (double**)malloc(data->numSamples * sizeof(double*));
+	data->outputData = (double**)malloc(data->numSamples * sizeof(double*));
+
+	for (i = 0; i < data->numSamples; i++) {
+
+		data->inputData[i] = (double*)malloc(data->numInputs * sizeof(double));
+		data->outputData[i] = (double*)malloc(data->numOutputs * sizeof(double));
+
+		for (j = 0; j < data->numInputs; j++) {
+			data->inputData[i][j] = inputs[i][j];
+		}
+
+		for (j = 0; j < data->numOutputs; j++) {
+			data->outputData[i][j] = outputs[i][j];
+		}
+	}
+
+	return data;
+}
 
 /*
 	Initialises data structure and assigns values of given file

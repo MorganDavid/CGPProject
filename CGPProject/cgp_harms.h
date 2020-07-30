@@ -1445,6 +1445,8 @@ DLL_EXPORT int getChromosomeGenerations(struct chromosome *chromo);
 		<freeDataSet>, <initialiseDataSetFromFile>, <printDataSet>
 */
 DLL_EXPORT struct dataSet *initialiseDataSetFromArrays(int numInputs, int numOutputs, int numSamples, double *inputs, double *outputs);
+//Takes malloc matrices instead of using the indexing thing. 
+DLL_EXPORT struct dataSet *initialiseDataSetFromMatrix(int numInputs, int numOutputs, int numSamples, double **inputs, double **outputs);
 
 
 /*
