@@ -24,9 +24,6 @@
     <ClCompile Include="my_fourier.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="mycgp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="cgp_harms.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -34,6 +31,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="my_struct_definitions.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="mycgp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

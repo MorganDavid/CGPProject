@@ -17,15 +17,16 @@ public:
     void setDatasetFromCGP(struct dataSet* data);
     void load_from_csv(const std::string file_dir);
 
-    MyFourierClass(double _Fs, dataSet* _dataset) :Fs{ _Fs } { // TODO: this doesn't load the datset
+    MyFourierClass(double _Fs, dataSet* _dataset) :Fs{ _Fs } {
         this->setDatasetFromCGP(_dataset);
+        // determine Fs based on difference between first two sample inputs
         this->freq_spect = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * dataset.height);
-
     };
 
-    MyFourierClass(double _Fs, std::string file_dir) :Fs{ _Fs } {
+    MyFourierClass(double _Fs, std::string file_dir) {
         this->load_from_csv(file_dir);
-        this->freq_spect = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * dataset.height);
+        // determine Fs based on difference between first two sample inputs
+        this->freq_spect = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * this->dataset.height);
     };
 
     virtual ~MyFourierClass() {

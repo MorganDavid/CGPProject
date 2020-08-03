@@ -43,7 +43,7 @@ double cgpWrapper::MSE(struct parameters* params, struct chromosome* chromo, str
 
 void cgpWrapper::initializeParams() {
     int numInputs = 1;
-    int numNodes = 15;
+    int numNodes = 50;
     int numOutputs = 1;
     int nodeArity = 2;
     const int harmonics_count = 3;
@@ -55,15 +55,16 @@ void cgpWrapper::initializeParams() {
 
     params = initialiseParameters(numInputs, numNodes, numOutputs, nodeArity);
 
-    addNodeFunction(params, "add,mul,pi,sin,cos,1");
+    addNodeFunction(params, "add,mul,pi,sin,cos");
 
    // setCustomFitnessFunction(params, MSE, "MSE");
     
     setTargetFitness(params, targetFitness);
-   // setLambda(params, 4);
-   // setMu(params, 1);
+    setLambda(params, 4);
+    setMu(params, 1);
     setUpdateFrequency(params, updateFrequency);
-    setMutationRate(params, 0.4);
+    //setMutationType(params, "point");
+    setMutationRate(params, 0.3);
     setNumThreads(params, 4);
     printParameters(params);
     params->myNumGens = 10000;
@@ -77,19 +78,22 @@ void cgpWrapper::harmonic_runCGP(std::string filename) {
     const int harmonics_count = params->harmonicRunParamters->numPeriods;
 
     struct dataSet* original_data = initialiseDataSetFromFile(filename.c_str()); // function in https://www.desmos.com/calculator/zlxnnoggsu
+    struct dataSet* trainingData = initialiseDataSetFromFile(filename.c_str());
 
-    MyFourierClass f(getNumDataSetSamples(original_data), original_data);
+    MyFourierClass f(500, original_data);
     f.execute_extract_harmonics(harmonics_count);
+    f.write_harmonics_to_csv("harmonics.csv");
+    f.write_to_csv_1d("amps.csv ", &f.get_amplitude_list()[0], f.get_amplitude_list().size());
+    f.write_to_csv_1d("freq.csv", &f.get_frequency_list()[0], f.get_frequency_list().size());
 
     // Modifying data to contain wave properties and input data
     // trainingData will change with each harmonic update, whereas orinal data will always be original input function
     // in input 0.
     original_data = constructDataSetWithWaveProperties(harmonics_count, original_data, f.get_amplitude_list(), f.get_frequency_list());
     // Basically using initialisedatasetfrommatrix as a deep copy constructor.
-    struct dataSet* trainingData = initialiseDataSetFromMatrix(original_data->numInputs, original_data->numOutputs, original_data->numSamples, original_data->inputData, original_data->outputData);
+    trainingData = constructDataSetWithWaveProperties(harmonics_count, trainingData, f.get_amplitude_list(), f.get_frequency_list());
 
     setNumInputs(params, trainingData->numInputs);
-    saveDataSet(trainingData, "trainingdata.csv");
     struct chromosome** best_chromos = new struct chromosome*[harmonics_count]();// () initilizes to 0    
 
     //Runs on all harmnonics except the last one. 
@@ -97,12 +101,14 @@ void cgpWrapper::harmonic_runCGP(std::string filename) {
         // Update trainingData with harmonic data instead.  
          std::vector<double> x = f.getSynthesisWithHarmonics(i);
          replaceCGPdataSetCol(trainingData, x, 0);
+         saveDataSet(trainingData, "trainingdata.csv");
         //Run CGP on the updated dataset
         setHarmonicRunParamaters(params, harmonics_count, i - 1, original_data);
         best_chromos[i - 1] = my_runCGP(trainingData);
         setInitChromo(params, best_chromos[i - 1]);
         writeAndPlot(best_chromos[i - 1], trainingData, "plot_" + std::to_string(i));
         std::cout << "Finished Harmonic " << std::endl;
+        saveChromosome(best_chromos[i - 1],std::string("chromo"+ i).c_str());
     }
 
     // Finally, run on original data
@@ -151,17 +157,18 @@ void cgpWrapper::writeAndPlot(struct chromosome* chromo, struct dataSet* data, s
     for (int i = 0; i < data->numSamples; i++) {
         const double one_input = getDataSetSampleInput(data, i, 0);
         const double arr[] = { one_input };
-        executeChromosome(chromo, arr);
+        executeChromosome(chromo, getDataSetSampleInputs(data,i));
         out << one_input << "," << (getChromosomeOutput(chromo, 0)) << "," << getDataSetSampleOutput(data, i, 0) << "," << std::endl;
     }
 
     out.close();
-    std::string one   ("gnuplot -e \"set datafile separator comma; set terminal jpeg; plot \\\"");
+   /* std::string one   ("gnuplot -e \"set datafile separator comma; set terminal jpeg; plot \\\"");
     std::string two   ("\\\" using ($1):($2) title \\\"Prediction\\\" with lines,\\\"");
     std::string three ("\\\" using ($1):($3) title \\\"True\\\" with lines;\" > \"");
     std::string four  (old_filename+ ".jpeg\\\"\"");
     std::string cmd   (one+filename+two+filename+three+four);
     system            (cmd.c_str());
+    std::cout << cmd << std::endl;*/
 }
 
 /// <summary>
@@ -181,7 +188,7 @@ struct dataSet* cgpWrapper::constructDataSetWithWaveProperties( const int k, str
     std::vector<int> maxInds = myhelpers::maxk(amplitudeList, k);
     
     double** inputs = new double*[data->numSamples];
-    int newNumInputs = data->numInputs - 1 + k * 3; // *3 because we are storing 3 extra inputs into each sample. 
+    int newNumInputs = data->numInputs + k * 2; // *3 because we are storing 3 extra inputs into each sample or 3 harmoncis 
     
     for (int i = 0; i < data->numSamples; i++) {
         // Space for the two new inputs.
@@ -190,12 +197,12 @@ struct dataSet* cgpWrapper::constructDataSetWithWaveProperties( const int k, str
         for (int x = 0; x < data->numInputs; x++) {
             inputs[i][x] = data->inputData[i][x];
         }
+
         // Add two new inputs
-        
+        int Fs = 500;
         for (int y = 0; y < k; y++) {
-            inputs[i][data->numInputs + y] = frequencyList[maxInds[y]].imag(); 
-            inputs[i][data->numInputs + y + 3] = amplitudeList[maxInds[y]];
-            inputs[i][data->numInputs + y + 6] = frequencyList[maxInds[y]].real();
+            inputs[i][data->numInputs + y] = amplitudeList[maxInds[y]];
+            inputs[i][data->numInputs + y + 3] = (Fs*maxInds[y])/data->numSamples;
         }
 
     }

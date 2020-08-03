@@ -21,11 +21,17 @@ void MyFourierClass::forward_fft(const int bins, const size_t L, myMatrix<double
     // TODO: test if dataset is intitialized first.
     // TEMPORARY: get first dimension from this for testing.
     std::vector<double> col = myhelpers::getColFromMatrix(dataset, 0);
-
+    MyFourierClass::write_to_csv_1d("blah.csv", &col[0],L);
     fftw_plan p;
     p = fftw_plan_dft_r2c_1d(L, &col[0], out, FFTW_ESTIMATE);
 
     fftw_execute(p);
+    //divide output by L
+    for (int i = 0; i < L / 2; i++) {
+        out[i][0] = 2*abs(out[i][0]) / L;
+        out[i][1] = 2*abs(out[i][1]) / L;
+    }
+    MyFourierClass::write_to_csv("out.csv", out, L);
 
     //for (int i = 0; i < 10; i++) std::cout << prev_output[i][0] << "+"<< prev_output[i][1]<< std::endl;
     fftw_destroy_plan(p);
@@ -45,8 +51,6 @@ void MyFourierClass::forward_fft(const int bins, const size_t L, myMatrix<double
 /// TODO: I think this code produces the output flipped/backwards for some reason. 
 void MyFourierClass::fourier_series(const std::vector<std::complex<double>> freq_spect_cmplx, const std::vector<double> amplitudeList, const int terms, const double Fs, const size_t L, double** out_sin, double** out_cos) {
     // -- Find strongest k amplitudes in freq_spect --
-   // std::vector<std::complex<double>> freq_spect_cmplx = myhelpers::fftw_complex2std_complex(freq_spect, L/2);
-
     std::vector<double> amp(amplitudeList);
     //write_to_csv_1d("amp_spec.csv", &amp[0], (int)L/2);
 
@@ -56,17 +60,17 @@ void MyFourierClass::fourier_series(const std::vector<std::complex<double>> freq
     //std::generate(t.begin(), t.end(), [Fs]() { static int i = 0;  return ((1.0/Fs) * (double)i++ ); });
 
     // -- Extract component waves --
-    for (int i = harms_idx.size() - 1; i >= 0;  i--) {
+    for (int i = harms_idx.size() - 1; i >= 0; i--) {
         int k = harms_idx[i];
-        double pr = 2 * M_PI * (k * (double)(Fs / L));
+        double pr = 2 * M_PI * (k * (double)(Fs / L));//input, assuming regular sampling.
 
         out_cos[i] = new double[L];
         out_sin[i] = new double[L];
 
         for (int x = 0; x < L; x++) {
             double t = 1.0 / Fs * x;
-            double cos_ans = (double)((2.0 * freq_spect_cmplx[k] / (double)L).real() * cos(pr * t));  //real(2*yf(k)/L)*cos(w*t(x));
-            double sin_ans = (double)((2.0 * freq_spect_cmplx[k] / (double)L).imag() * sin(pr * t));
+            double cos_ans = (double)((2.0 * freq_spect_cmplx[k]).real() * cos(pr * t));  //real(2*yf(k)/L)*cos(w*t(x));
+            double sin_ans = (double)((2.0 * freq_spect_cmplx[k]).imag() * sin(pr * t));
             out_cos[i][x] = cos_ans;
             out_sin[i][x] = sin_ans;
         }
@@ -97,7 +101,7 @@ std::vector<double> MyFourierClass::calculate_amplitude_list(std::vector<std::co
     std::vector<double> amp(freq_spect.size()); // amplitude vector
     for (int i = 0; i < freq_spect.size(); i++) {
         double abbed = std::abs(freq_spect[i]);
-        amp[i] = 2 * abbed / (freq_spect.size()); // = 2.*|freq_spec(1:L/2)./L|
+        amp[i] = (abbed); // = 2.*|freq_spec(1:L/2)./L|
     }
     return amp; 
 }
@@ -192,6 +196,8 @@ void MyFourierClass::execute_extract_harmonics(int terms)
 
     execute_forward_fft(L);
     this->frequencyList = myhelpers::fftw_complex2std_complex(this->freq_spect, L / 2);
+    // Fix frequencies to be correct (dont understand this problem).
+   
     this->amplitudeList = calculate_amplitude_list(frequencyList);
     //TODO: add phase here
     fourier_series(this->frequencyList, this->amplitudeList, terms, this->Fs, L, out_sin, out_cos);

@@ -344,3 +344,6 @@ ASALocalRun/
 
 # BeatPulse healthcheck temp database
 healthchecksdb
+/CGPProject/newdifficultdataset.txt
+*.png
+/CGPProject/romo
