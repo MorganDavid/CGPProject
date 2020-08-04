@@ -19,23 +19,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="adder_test.cpp" />
-    <ClCompile Include="cgp_harms.c" />
-    <ClCompile Include="cgp_library_extension.c" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="mycgp.cpp" />
-    <ClCompile Include="my_fourier.cpp" />
-    <ClCompile Include="my_struct_definitions.c" />
+    <ClInclude Include="src\cgp_harms.h" />
+    <ClInclude Include="src\mycgp.h" />
+    <ClInclude Include="src\myhelpers.h" />
+    <ClInclude Include="src\mymatrix.h" />
+    <ClInclude Include="src\my_fourier.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cgp_harms.h" />
-    <ClInclude Include="mycgp.h" />
-    <ClInclude Include="myhelpers.h" />
-    <ClInclude Include="mymatrix.h" />
-    <ClInclude Include="my_fourier.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\..\..\..\Google Drive\_University (Notts)\Semester 2\GP\auto-mpg-edit.csv" />
+    <ClCompile Include="src\adder_test.cpp" />
+    <ClCompile Include="src\cgp_harms.c" />
+    <ClCompile Include="src\cgp_library_extension.c" />
+    <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\mycgp.cpp" />
+    <ClCompile Include="src\my_fourier.cpp" />
+    <ClCompile Include="src\my_struct_definitions.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

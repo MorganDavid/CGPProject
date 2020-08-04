@@ -15,48 +15,43 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="adder_test.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="my_fourier.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cgp_harms.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="cgp_library_extension.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="my_struct_definitions.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="mycgp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="mycgp.h">
+    <ClInclude Include="src\cgp_harms.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="my_fourier.h">
+    <ClInclude Include="src\my_fourier.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="myhelpers.h">
+    <ClInclude Include="src\mycgp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="cgp_harms.h">
+    <ClInclude Include="src\myhelpers.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="mymatrix.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="src\mymatrix.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\..\Google Drive\_University (Notts)\Semester 2\GP\auto-mpg-edit.csv">
+    <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
-    </None>
+    </ClCompile>
+    <ClCompile Include="src\my_fourier.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\my_struct_definitions.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mycgp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\adder_test.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cgp_harms.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\cgp_library_extension.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

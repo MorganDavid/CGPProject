@@ -54,7 +54,7 @@ public:
     //Template functions have to be inline (i think)
     template<class T>
     static inline void write_to_csv(std::string file_dir, T** arr, const int width, const int height) {
-        std::ofstream out(file_dir + ".csv");
+        std::ofstream out("output/"+file_dir);
 
         for (int r = 0; r < height; r++) {
             for (int c = 0; c < width; c++)
@@ -70,8 +70,8 @@ public:
     //Template functions have to be inline (i think)
     //TODO: see if there's a less stupid way to have all these similar functions in one function. 
     template<class T>
-    static inline void write_to_csv_1d(const char* file_dir, const T* const arr, const int L) {
-        std::ofstream out(file_dir);
+    static inline void write_to_csv_1d(const std::string file_dir, const T* const arr, const int L) {
+        std::ofstream out("output/"+file_dir);
 
         for (int r = 0; r < L; r++) {
             out << arr[r] << ',' << '\n';
@@ -80,8 +80,8 @@ public:
     };
    
     //TODO: make a new implementation of this to generalize to any type with tostring ability. 
-    static inline void write_to_csv(const char* file_dir, fftw_complex* arr, const int L) {
-        std::ofstream out(file_dir);
+    static inline void write_to_csv(const std::string file_dir, fftw_complex* arr, const int L) {
+        std::ofstream out("output/"+file_dir);
 
         for (int r = 0; r < L; r++) {
             out << arr[r][0] << ":" << arr[r][1] << ',' << "\n";

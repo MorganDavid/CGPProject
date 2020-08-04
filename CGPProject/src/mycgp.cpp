@@ -67,8 +67,8 @@ void cgpWrapper::initializeParams() {
     setMutationRate(params, 0.3);
     setNumThreads(params, 4);
     printParameters(params);
-    params->myNumGens = 10000;
-    params->myNumRepeats = 3;
+    params->myNumGens = 1000;
+    params->myNumRepeats = 2;
 
     setHarmonicRunParamaters(params, harmonics_count, 0, nullptr);
     setHarmonicRunResultsInit(params, harmonics_count, 50000, updateFrequency);
@@ -101,14 +101,14 @@ void cgpWrapper::harmonic_runCGP(std::string filename) {
         // Update trainingData with harmonic data instead.  
          std::vector<double> x = f.getSynthesisWithHarmonics(i);
          replaceCGPdataSetCol(trainingData, x, 0);
-         saveDataSet(trainingData, "trainingdata.csv");
+         saveDataSet(trainingData, "output/trainingdata.csv");
         //Run CGP on the updated dataset
         setHarmonicRunParamaters(params, harmonics_count, i - 1, original_data);
         best_chromos[i - 1] = my_runCGP(trainingData);
         setInitChromo(params, best_chromos[i - 1]);
         writeAndPlot(best_chromos[i - 1], trainingData, "plot_" + std::to_string(i));
         std::cout << "Finished Harmonic " << std::endl;
-        saveChromosome(best_chromos[i - 1],std::string("chromo"+ i).c_str());
+        saveChromosome(best_chromos[i - 1],(std::string("output/chromo")+std::to_string(i)).c_str());
     }
 
     // Finally, run on original data
@@ -152,7 +152,7 @@ void cgpWrapper::replaceCGPdataSetCol(dataSet* trainingData, const std::vector<d
 
 void cgpWrapper::writeAndPlot(struct chromosome* chromo, struct dataSet* data, std::string filename) {
     std::string old_filename = filename;
-    filename = filename+".csv";
+    filename = "output/"+filename+".csv";
     std::ofstream out(filename);
     for (int i = 0; i < data->numSamples; i++) {
         const double one_input = getDataSetSampleInput(data, i, 0);
