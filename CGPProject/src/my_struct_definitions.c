@@ -66,6 +66,7 @@ struct dataSet {
 	double** inputData;
 	double** outputData;
 };
+
 struct node {
 	int function;
 	int* inputs;
@@ -74,6 +75,7 @@ struct node {
 	double output;
 	int maxArity;
 	int actArity;
+	int isFrozen;
 };
 
 struct functionSet {

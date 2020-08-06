@@ -26,7 +26,6 @@
     <ClInclude Include="src\my_fourier.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\adder_test.cpp" />
     <ClCompile Include="src\cgp_harms.c" />
     <ClCompile Include="src\cgp_library_extension.c" />
     <ClCompile Include="src\main.cpp" />

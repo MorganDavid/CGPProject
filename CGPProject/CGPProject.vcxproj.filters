@@ -44,9 +44,6 @@
     <ClCompile Include="src\mycgp.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\adder_test.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\cgp_harms.c">
       <Filter>Source Files</Filter>
     </ClCompile>

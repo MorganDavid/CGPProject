@@ -43,7 +43,7 @@ double cgpWrapper::MSE(struct parameters* params, struct chromosome* chromo, str
 
 void cgpWrapper::initializeParams() {
     int numInputs = 1;
-    int numNodes = 0;
+    int numNodes = 30;
     int numOutputs = 1;
     int nodeArity = 2;
     const int harmonics_count = 3;
@@ -102,7 +102,8 @@ void cgpWrapper::harmonic_runCGP(std::string filename) {
          std::vector<double> x = f.getSynthesisWithHarmonics(i);
          replaceCGPdataSetCol(trainingData, x, 0);
          saveDataSet(trainingData, "output/trainingdata.csv");
-        //Run CGP on the updated dataset
+
+         //Run CGP on the updated dataset
         setHarmonicRunParamaters(params, harmonics_count, i - 1, original_data);
         best_chromos[i - 1] = my_runCGP(trainingData);
         setInitChromo(params, best_chromos[i - 1]);
