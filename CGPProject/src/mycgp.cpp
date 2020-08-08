@@ -43,36 +43,65 @@ double cgpWrapper::MSE(struct parameters* params, struct chromosome* chromo, str
 
 void cgpWrapper::initializeParams() {
     int numInputs = 1;
-    int numNodes = 0;
+    int numNodes = 10;
     int numOutputs = 1;
     int nodeArity = 2;
-    const int harmonics_count = 3;
+    const int harmonics_count = 4;
 
     int updateFrequency = 20; // must be integer multiple of myNumGens
-    double targetFitness = 0.001;
+    double targetFitness = 1;
     int fourier_terms = 3;
     double** out_synth = new double* [fourier_terms];
 
     params = initialiseParameters(numInputs, numNodes, numOutputs, nodeArity);
 
-    addNodeFunction(params, "add,mul,pi,sin,cos");
+    addNodeFunction(params, "add,mul,div,sub");
 
    // setCustomFitnessFunction(params, MSE, "MSE");
     
     setTargetFitness(params, targetFitness);
-    setLambda(params, 4);
-    setMu(params, 1);
+    setLambda(params, 128);
+    setMu(params, 18);
     setUpdateFrequency(params, updateFrequency);
     //setMutationType(params, "point");
     setMutationRate(params, 0.4);
     setNumThreads(params, 4);
     printParameters(params);
-    params->myNumGens = 10000;
+    params->myNumGens = 1000;
     params->myNumRepeats = 3;
 
     setHarmonicRunParamaters(params, harmonics_count, 0, nullptr);
     setHarmonicRunResultsInit(params, harmonics_count, 50000, updateFrequency);
 }
+
+void cgpWrapper::harmonic_runCGP_with_fourier_input(std::string filename) {
+    const int harmonics_count = params->harmonicRunParamters->numPeriods;
+
+    struct dataSet* original_data = initialiseDataSetFromFile(filename.c_str()); // function in https://www.desmos.com/calculator/zlxnnoggsu
+    struct dataSet* trainingData = initialiseDataSetFromFile(filename.c_str());
+    int Fs = 100;
+    MyFourierClass f(Fs, original_data);
+    f.execute_extract_harmonics(harmonics_count);
+
+    // Modifying data to contain wave properties and input data
+    // trainingData will change with each harmonic update, whereas orinal data will always be original input function
+    // in input 0.
+    original_data = constructDataSetWithFourierInputs(harmonics_count, Fs, original_data, f.get_cos_mat(), f.get_sin_mat());
+    // Basically using initialisedatasetfrommatrix as a deep copy constructor.
+    trainingData = constructDataSetWithFourierInputs(harmonics_count, Fs, trainingData, f.get_cos_mat(), f.get_sin_mat());
+    saveDataSet(original_data, "original_data.csv");
+    setNumInputs(params, trainingData->numInputs);
+
+    // Finally, run on original data
+    setHarmonicRunParamaters(params, harmonics_count, harmonics_count - 1, original_data);
+    struct chromosome * chromo = my_runCGP(original_data);
+    writeAndPlot(chromo, original_data, "plot_final");
+
+    freeDataSet(trainingData);
+    freeChromosome(chromo);
+    freeParameters(params);
+
+}             
 
 void cgpWrapper::harmonic_runCGP(std::string filename) {
     const int harmonics_count = params->harmonicRunParamters->numPeriods;
@@ -82,6 +111,7 @@ void cgpWrapper::harmonic_runCGP(std::string filename) {
     int Fs = 100;
     MyFourierClass f(Fs, original_data);
     f.execute_extract_harmonics(harmonics_count);
+
     f.write_harmonics_to_csv("harmonics.csv");
     f.write_to_csv_1d("amps.csv ", &f.get_amplitude_list()[0], f.get_amplitude_list().size());
     f.write_to_csv_1d("freq.csv", &f.get_frequency_list()[0], f.get_frequency_list().size());
@@ -100,7 +130,7 @@ void cgpWrapper::harmonic_runCGP(std::string filename) {
     for (int i = 1; i < harmonics_count; i++) {
         // Update trainingData with harmonic data instead.  
          std::vector<double> x = f.getSynthesisWithHarmonics(i);
-         replaceCGPdataSetCol(trainingData, x, 0);
+         replaceCGPdataSetCol(trainingData, x, 0, false);
          saveDataSet(trainingData, "output/trainingdata.csv");
         //Run CGP on the updated dataset
         setHarmonicRunParamaters(params, harmonics_count, i - 1, original_data);
@@ -143,10 +173,11 @@ struct chromosome* cgpWrapper::my_runCGP(struct dataSet* trainingData) {
 /// <param name="trainingData"></param>
 /// <param name="x"></param>
 /// <param name="col"></param>
-void cgpWrapper::replaceCGPdataSetCol(dataSet* trainingData, const std::vector<double> x, const int col)
+void cgpWrapper::replaceCGPdataSetCol(dataSet* trainingData, const std::vector<double> x, const int col, const bool replaceInput)
 {
     for (int i = 0; i < trainingData->numSamples; i++) {
-        trainingData->outputData[i][col] = x[i];
+        if (!replaceInput) { trainingData->outputData[i][col] = x[i]; };
+        if (replaceInput) { trainingData->inputData[i][col] = x[i]; };
     }
 }
 
@@ -180,9 +211,7 @@ void cgpWrapper::writeAndPlot(struct chromosome* chromo, struct dataSet* data, s
 /// <param name="frequencyList"></param>
 /// <param name="outData"></param>
 struct dataSet* cgpWrapper::constructDataSetWithWaveProperties( const int k, const int Fs, struct dataSet* data, std::vector<double> amplitudeList, std::vector<std::complex<double>> frequencyList ) {
-    if (k <= 0) {
-        return data;
-    }
+    if (k <= 0) return data;
     
     //get maxk amplitudes
     std::vector<int> maxInds = myhelpers::maxk(amplitudeList, k);
@@ -212,3 +241,42 @@ struct dataSet* cgpWrapper::constructDataSetWithWaveProperties( const int k, con
     //saveDataSet(outData, "ds_with_Fourier_info.csv");
     return initialiseDataSetFromMatrix(newNumInputs, data->numOutputs, data->numSamples, inputs, data->outputData);
 }   
+
+
+/// <summary>
+/// Adds the top k harmonic synthesis outputs to the input.
+/// It adds the entire harmonic synthesis and not just wave properties
+/// </summary>
+/// <param name="k"> number of harmoncis to add into the CGP inputs. </param>
+/// <param name="data"></param>
+/// <param name="amplitudeList"></param>
+/// <param name="frequencyList"></param>
+/// <param name="outData"></param>
+struct dataSet* cgpWrapper::constructDataSetWithFourierInputs(const int k, const int Fs, struct dataSet* data, const double * const * cos_mat, const double * const * sin_mat) {
+    if (k <= 0) return data;
+    
+    double** inputs = new double* [data->numSamples];
+    int newNumInputs = data->numInputs + k * 2;
+
+    for (int i = 0; i < data->numSamples; i++) {
+        // Space for the two new inputs.
+        inputs[i] = new double[newNumInputs];
+        // Fill existing inputs into inputData
+        for (int x = 0; x < data->numInputs; x++) {
+            inputs[i][x] = data->inputData[i][x];
+        }
+
+        // Add k new inputs
+        for (int y = 0; y < k; y++) {
+            inputs[i][data->numInputs + y] = cos_mat[y][i];
+            inputs[i][data->numInputs + y + k] = sin_mat[y][i];
+        }
+
+    }
+    //print inputs to csv for debug 
+    // self-init outData from malloc array. 
+
+    MyFourierClass::write_to_csv("inputs_with_fourier.csv", inputs, newNumInputs, data->numSamples);
+   // saveDataSet(outData, "ds_with_Fourier_info.csv");
+    return initialiseDataSetFromMatrix(newNumInputs, data->numOutputs, data->numSamples, inputs, data->outputData);
+}

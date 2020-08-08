@@ -97,16 +97,30 @@ public:
     inline std::vector<double> get_phase_list() {
         return phaseList;
     }
+    inline double** get_cos_mat() {
+        return out_cos;
+    }
+    inline double** get_sin_mat() {
+        return out_sin;
+    }
+
+
 private:
     myMatrix<double> dataset; // Stores the matrix to be Fourier transformed.
+    int num_of_terms = -1; // Number of terms to generatie 
     double Fs; //  sample rate 
     myMatrix<double> harmonic_output;
+    
+    // Stores all sin/cos waves up to num of terms. 
+    double** out_cos;
+    double** out_sin;
+    
     fftw_complex* freq_spect;
 
     std::vector<double> amplitudeList;
     std::vector<double> phaseList;
     std::vector<std::complex<double>> frequencyList;
-    
+
     static void forward_fft(const int bins, const size_t L, myMatrix<double> dataset, fftw_complex* out);
     inline void execute_forward_fft(int bins) {
         forward_fft(bins, this->dataset.height, this->dataset, this->freq_spect);

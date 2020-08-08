@@ -79,6 +79,7 @@ void MyFourierClass::fourier_series(const std::vector<std::complex<double>> freq
         std::reverse(out_sin[i], out_sin[i] + L);
     }
 }
+
 /// <summary>
 /// Uses the results from `fourier_series` to synthesise the original function using numbers of harmonics UP TO `terms`. 
 /// </summary>
@@ -191,8 +192,9 @@ void MyFourierClass::setDatasetFromCGP(struct dataSet* data)
 void MyFourierClass::execute_extract_harmonics(int terms)
 {
     int L = this->dataset.height;
-    double** out_cos = new double* [terms];
-    double** out_sin = new double* [terms];
+    this->num_of_terms = terms;
+    this->out_cos = new double* [terms];
+    this->out_sin = new double* [terms];
 
     execute_forward_fft(L);
     this->frequencyList = myhelpers::fftw_complex2std_complex(this->freq_spect, L / 2);
