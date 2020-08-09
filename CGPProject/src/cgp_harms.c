@@ -3112,7 +3112,7 @@ DLL_EXPORT struct chromosome* runCGP(struct parameters *params, struct dataSet *
 
 		/* display progress to the user at the update frequency specified */
 		// don't print if using repititions. 
-		if (!(params->myNumRepeats>0) && ( params->updateFrequency != 0 && (gen % (params->updateFrequency * 10) == 0 || gen >= numGens - 1) )) {
+		if (/*!(params->myNumRepeats>0) &&*/ ( params->updateFrequency != 0 && (gen % (params->updateFrequency * 10) == 0 || gen >= numGens - 1) )) {
 			printf("%d\t%f\n", gen, bestChromo->fitness);
 		}
 		//Update results parameter

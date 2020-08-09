@@ -43,13 +43,13 @@ double cgpWrapper::MSE(struct parameters* params, struct chromosome* chromo, str
 
 void cgpWrapper::initializeParams() {
     int numInputs = 1;
-    int numNodes = 0;
+    int numNodes = 30;
     int numOutputs = 1;
     int nodeArity = 2;
     const int harmonics_count = 3;
 
     int updateFrequency = 20; // must be integer multiple of myNumGens
-    double targetFitness = 0.001;
+    double targetFitness = 3;
     int fourier_terms = 3;
     double** out_synth = new double* [fourier_terms];
 
@@ -60,15 +60,15 @@ void cgpWrapper::initializeParams() {
    // setCustomFitnessFunction(params, MSE, "MSE");
     
     setTargetFitness(params, targetFitness);
-    setLambda(params, 4);
-    setMu(params, 1);
+    setLambda(params, 128);
+    setMu(params, 4);
     setUpdateFrequency(params, updateFrequency);
     //setMutationType(params, "point");
     setMutationRate(params, 0.4);
     setNumThreads(params, 4);
     printParameters(params);
-    params->myNumGens = 10000;
-    params->myNumRepeats = 3;
+    params->myNumGens = 1000;
+    params->myNumRepeats = 1;
 
     setHarmonicRunParamaters(params, harmonics_count, 0, nullptr);
     setHarmonicRunResultsInit(params, harmonics_count, 50000, updateFrequency);
