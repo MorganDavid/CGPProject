@@ -69,8 +69,8 @@ void MyFourierClass::fourier_series(const std::vector<std::complex<double>> freq
 
         for (int x = 0; x < L; x++) {
             double t = 1.0 / Fs * x;
-            double cos_ans = (double)((2.0 * freq_spect_cmplx[k]).real() * cos(pr * t));  //real(2*yf(k)/L)*cos(w*t(x));
-            double sin_ans = (double)((2.0 * freq_spect_cmplx[k]).imag() * sin(pr * t));
+            double cos_ans = (double)((freq_spect_cmplx[k]).real() * cos(pr * t));  //real(2*yf(k)/L)*cos(w*t(x));
+            double sin_ans = (double)((freq_spect_cmplx[k]).imag() * sin(pr * t));
             out_cos[i][x] = cos_ans;
             out_sin[i][x] = sin_ans;
         }
