@@ -74,9 +74,6 @@ void MyFourierClass::fourier_series(const std::vector<std::complex<double>> freq
             out_cos[i][x] = cos_ans;
             out_sin[i][x] = sin_ans;
         }
-        // This code produces the spectrums backwards. Don't know why, reverse to fix.
-        std::reverse(out_cos[i], out_cos[i] + L);
-        std::reverse(out_sin[i], out_sin[i] + L);
     }
 }
 
