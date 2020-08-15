@@ -50,12 +50,12 @@ void cgpWrapper::initializeParams() {
 
     int updateFrequency = 20; // must be integer multiple of myNumGens
     double targetFitness = 1;
-    int fourier_terms = 3;
+    int fourier_terms = 10;
     double** out_synth = new double* [fourier_terms];
 
     params = initialiseParameters(numInputs, numNodes, numOutputs, nodeArity);
 
-    addNodeFunction(params, "add,mul,div,sub");
+    addNodeFunction(params, "add,mul,div,sin,cos,pi,sub");
 
    // setCustomFitnessFunction(params, MSE, "MSE");
     
@@ -79,7 +79,7 @@ void cgpWrapper::harmonic_runCGP_with_fourier_input(std::string filename) {
 
     struct dataSet* original_data = initialiseDataSetFromFile(filename.c_str()); // function in https://www.desmos.com/calculator/zlxnnoggsu
     struct dataSet* trainingData = initialiseDataSetFromFile(filename.c_str());
-    int Fs = 100;
+    int Fs = 1;
     MyFourierClass f(Fs, original_data);
     f.execute_extract_harmonics(harmonics_count);
 
@@ -89,19 +89,78 @@ void cgpWrapper::harmonic_runCGP_with_fourier_input(std::string filename) {
     original_data = constructDataSetWithFourierInputs(harmonics_count, Fs, original_data, f.get_cos_mat(), f.get_sin_mat());
     // Basically using initialisedatasetfrommatrix as a deep copy constructor.
     trainingData = constructDataSetWithFourierInputs(harmonics_count, Fs, trainingData, f.get_cos_mat(), f.get_sin_mat());
-    saveDataSet(original_data, "original_data.csv");
     setNumInputs(params, trainingData->numInputs);
+    saveDataSet(original_data, "original_data.csv");
 
     // Finally, run on original data
     setHarmonicRunParamaters(params, harmonics_count, harmonics_count - 1, original_data);
-    struct chromosome * chromo = my_runCGP(original_data);
+    struct chromosome* chromo = my_runCGP(original_data);
     writeAndPlot(chromo, original_data, "plot_final");
 
     freeDataSet(trainingData);
     freeChromosome(chromo);
     freeParameters(params);
 
-}             
+}
+
+void cgpWrapper::harmonic_runCGP_wave(std::string filename) {
+    const int harmonics_count = params->harmonicRunParamters->numPeriods;
+
+    struct dataSet* original_data = initialiseDataSetFromFile(filename.c_str()); // function in https://www.desmos.com/calculator/zlxnnoggsu
+    struct dataSet* trainingData = initialiseDataSetFromFile(filename.c_str());
+    int Fs = 1;
+    MyFourierClass f(Fs, original_data);
+    f.execute_extract_harmonics(harmonics_count);
+
+    f.write_harmonics_to_csv("harmonics.csv");
+    f.write_to_csv_1d("amps.csv ", &f.get_amplitude_list()[0], f.get_amplitude_list().size());
+    f.write_to_csv_1d("freq.csv", &f.get_frequency_list()[0], f.get_frequency_list().size());
+
+    // Modifying data to contain wave properties and input data
+    // trainingData will change with each harmonic update, whereas orinal data will always be original input function
+    // in input 0.
+    original_data = constructDataSetWithFourierInputs(harmonics_count, Fs, original_data, f.get_cos_mat(), f.get_sin_mat());
+    // Basically using initialisedatasetfrommatrix as a deep copy constructor.
+    trainingData = constructDataSetWithFourierInputs(harmonics_count, Fs, trainingData, f.get_cos_mat(), f.get_sin_mat());
+
+    setNumInputs(params, trainingData->numInputs);
+    struct chromosome** best_chromos = new struct chromosome* [harmonics_count]();// () initilizes to 0    
+
+    //Runs on all harmnonics except the last one. 
+    for (int i = 1; i < harmonics_count; i++) {
+        // Update trainingData with harmonic data instead.  
+        std::vector<double> x = f.getSynthesisWithHarmonics(i);
+        if (i != 1) { // Subtract the previoious period best chromo predicitions from this period's target value.
+            f.write_to_csv_1d<double>("before_subtraction_"+std::to_string(i)+".csv", &x[0], x.size());
+            x = subtractChromoPredsFromTarget(best_chromos[i - 2], trainingData, x);
+            f.write_to_csv_1d<double>("after_subtraction_"+std::to_string(i)+".csv", &x[0], x.size());
+        }
+        replaceCGPdataSetCol(trainingData, x, 0, false);
+        saveDataSet(trainingData, std::string("trainingData" + std::to_string(i) + ".csv").c_str());
+        //Run CGP on the updated dataset
+        setHarmonicRunParamaters(params, harmonics_count, i - 1, original_data);
+        best_chromos[i - 1] = my_runCGP(trainingData);
+
+        writeAndPlot(best_chromos[i - 1], trainingData, "plot_" + std::to_string(i));
+        std::cout << "Finished Harmonic " << std::endl;
+        saveChromosome(best_chromos[i - 1], (std::string("output/chromo") + std::to_string(i)).c_str());
+    }
+    // Finally, run on original data
+    setHarmonicRunParamaters(params, harmonics_count, harmonics_count - 1, original_data);
+    best_chromos[harmonics_count - 1] = my_runCGP(original_data);
+    writeAndPlot(best_chromos[harmonics_count - 1], original_data, "plot_final");
+
+    MyFourierClass::write_to_csv<double>("realfitness", getRealFitnessFromParams(params), params->myNumGens / params->updateFrequency, harmonics_count);
+    MyFourierClass::write_to_csv<double>("harmonicfitness", getHarmonicFitnessFromParams(params), params->myNumGens / params->updateFrequency, harmonics_count);
+
+    freeDataSet(trainingData);
+    for (int i = 0; i < harmonics_count; i++) {
+        if (best_chromos[i] != 0) {
+            freeChromosome(best_chromos[i]);
+        }
+    }
+    freeParameters(params);
+}
 
 void cgpWrapper::harmonic_runCGP(std::string filename) {
     const int harmonics_count = params->harmonicRunParamters->numPeriods;
@@ -129,18 +188,17 @@ void cgpWrapper::harmonic_runCGP(std::string filename) {
     //Runs on all harmnonics except the last one. 
     for (int i = 1; i < harmonics_count; i++) {
         // Update trainingData with harmonic data instead.  
-         std::vector<double> x = f.getSynthesisWithHarmonics(i);
-         replaceCGPdataSetCol(trainingData, x, 0, false);
-         saveDataSet(trainingData, "output/trainingdata.csv");
+        std::vector<double> x = f.getSynthesisWithHarmonics(i);
+
+        replaceCGPdataSetCol(trainingData, x, 0, false);
         //Run CGP on the updated dataset
         setHarmonicRunParamaters(params, harmonics_count, i - 1, original_data);
         best_chromos[i - 1] = my_runCGP(trainingData);
-        setInitChromo(params, best_chromos[i - 1]);
+        
         writeAndPlot(best_chromos[i - 1], trainingData, "plot_" + std::to_string(i));
         std::cout << "Finished Harmonic " << std::endl;
         saveChromosome(best_chromos[i - 1],(std::string("output/chromo")+std::to_string(i)).c_str());
     }
-
     // Finally, run on original data
     setHarmonicRunParamaters(params, harmonics_count, harmonics_count-1, original_data);
     best_chromos[harmonics_count - 1] = my_runCGP(original_data);
@@ -179,6 +237,19 @@ void cgpWrapper::replaceCGPdataSetCol(dataSet* trainingData, const std::vector<d
         if (!replaceInput) { trainingData->outputData[i][col] = x[i]; };
         if (replaceInput) { trainingData->inputData[i][col] = x[i]; };
     }
+}
+
+// Used to subtract the previous periods best chromo predictions from the next periods target values for the wave like system.
+// <returns> target vector with subtraction applied - data not modified. 
+std::vector<double> cgpWrapper::subtractChromoPredsFromTarget(struct chromosome* chromo, struct dataSet* data, std::vector<double> new_target) {
+    /* for each sample in data */
+    for (int i = 0; i < getNumDataSetSamples(data); i++) {
+        /* calculate the chromosome outputs for the set of inputs  */
+        executeChromosome(chromo, getDataSetSampleInputs(data, i));
+
+        new_target[i] = new_target[i] - getChromosomeOutput(chromo, 0);        
+    }
+    return new_target;
 }
 
 void cgpWrapper::writeAndPlot(struct chromosome* chromo, struct dataSet* data, std::string filename) {

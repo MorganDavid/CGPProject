@@ -48,8 +48,10 @@ public:
     };
 
     inline void write_harmonics_to_csv(std::string file_dir) const {
-        MyFourierClass::write_to_csv<double>(file_dir, this->harmonic_output.data, (int)this->harmonic_output.width, (int)this->harmonic_output.height);
-    };
+        for (int i = 0; i < (int)this->harmonic_output.height; i++) {
+            MyFourierClass::write_to_csv_1d<double>("/harmonics/"+file_dir+"_"+std::to_string(i)+".csv", this->harmonic_output.data[i], (int)this->harmonic_output.width);
+        }
+     };
 
     //Template functions have to be inline (i think)
     template<class T>

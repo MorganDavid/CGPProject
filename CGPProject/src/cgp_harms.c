@@ -1147,7 +1147,7 @@ DLL_EXPORT void executeChromosome(struct chromosome *chromo, const double *input
 	for (i = 0; i < numOutputs; i++) {
 
 		if (chromo->outputNodes[i] < numInputs) {
-			chromo->outputValues[i] = inputs[chromo->outputNodes[i]];
+			chromo->outputValues[i] = inputs[chromo->outputNodes[i]]; // If this is an input chromosome
 		}
 		else {
 			chromo->outputValues[i] = chromo->nodes[chromo->outputNodes[i] - numInputs]->output;

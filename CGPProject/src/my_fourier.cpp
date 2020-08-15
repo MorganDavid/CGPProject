@@ -124,6 +124,7 @@ void MyFourierClass::inverse_fft(const int terms, fftw_complex* input, double* o
 // DISCLAIMER: copied some of this function's code from cgp.c
 // First line of csv must be inputs,outputs,samples. Same as cgp library.
 // Also allocates data for this->dataset.
+// TODO: this function has stopped working, fix it. 
 void MyFourierClass::load_from_csv(const std::string file_dir) {
     std::ifstream file(file_dir);
     std::string line;
@@ -142,7 +143,7 @@ void MyFourierClass::load_from_csv(const std::string file_dir) {
         std::getline(file, line);
 
         if (!file.good()) {
-            std::cout<< (file_dir + " at row " + std::to_string(r))<<std::endl;
+            std::cout<< ("ERROR "+file_dir + " at row " + std::to_string(r))<<std::endl;
             break;
         }
 
@@ -153,7 +154,7 @@ void MyFourierClass::load_from_csv(const std::string file_dir) {
             std::string v;
             std::getline(iss, v, ',');
             if (!iss.good()) {
-                std::cout << (file_dir + " at " + std::to_string(r) + "," + std::to_string(c))<<std::endl;
+                std::cout << ("ERROR" + file_dir + " at " + std::to_string(r) + "," + std::to_string(c))<<std::endl;
                 break;
             }
             std::stringstream ss(v);
