@@ -99,16 +99,22 @@ public:
     inline std::vector<double> get_phase_list() {
         return phaseList;
     }
-
+    /// If we don't want to increment by one for every term, use this. define as [2,6,10,20] for example.
+    /// Run this before `execute_extract_harmonics` (optinal)
+    inline void set_terms_array(int terms, int* terms_arr) {
+        this->num_of_terms = terms;
+        this->terms_array = terms_arr;
+    }
+    inline int* get_terms_array() {
+        return terms_array;
+    }
 private:
     myMatrix<double> dataset; // Stores the matrix to be Fourier transformed.
     int num_of_terms = -1; // Number of terms to generatie 
+    int* terms_array = NULL; // If we don't want to increment by one for every term, use this. define as [2,6,10,20] with four num_of_terms for example.
     double Fs; //  sample rate 
     myMatrix<double> harmonic_output;
-    
-    // Stores all sin/cos waves up to num of terms. 
-    std::complex<double>* out_synthesis;
-    
+        
     fftw_complex* freq_spect;
 
     std::vector<double> amplitudeList;
@@ -123,13 +129,6 @@ private:
 
 	static void fourier_series(const std::vector<std::complex<double>> freq_spect_cmplx, const std::vector<double> amplitudeList, const int terms, const double Fs, const size_t L, std::complex<double>* out_synthesis);
 
-	static void synthesise_from_waves(const int terms, const size_t L,const double* const * sin_mat, const double*const* cos_mat, double** out_synthesis);
-    inline void execute_synthesise_from_waves(const int terms, const double* const* out_sin, const double* const* out_cos) {
-        this->harmonic_output.data = new double* [terms];
-        this->harmonic_output.height = terms;
-        this->harmonic_output.width = this->dataset.height;
-        synthesise_from_waves(terms, this->dataset.height, out_sin, out_cos, this->harmonic_output.data);
-    };
 
     void inverse_fft(const int terms, fftw_complex* input, double* output) const;
 

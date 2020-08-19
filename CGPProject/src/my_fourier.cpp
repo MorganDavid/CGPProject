@@ -68,29 +68,11 @@ void MyFourierClass::fourier_series(const std::vector<std::complex<double>> freq
     }
 }
 
-/// <summary>
-/// Uses the results from `fourier_series` to synthesise the original function using numbers of harmonics UP TO `terms`. 
-/// </summary>
-/// <param name="out_synthesis">Must be initialized with first dimension size `terms`. Indexing out_synthesis[0] will give you the result of the fourier series with 1 harmonic,
-/// out_synthesis[1] will give you the result with 2 harmonics and so on up to `terms`.</param>
-void MyFourierClass::synthesise_from_waves(const int terms, const size_t L,const double*const* sin_mat, const double* const * cos_mat, double** out_synthesis) {
-    for (int t = 1; t < terms+1; t++){
-        out_synthesis[t-1] = new double[L]();
-        for (int i = 0; i < t; i++) {
-            for (int z = 0; z < L; z++) {
-                double ans = out_synthesis[t-1][z] + cos_mat[i][z];
-                out_synthesis[t-1][z] = ans;
-            }
-        }
-    }
-    
-}
-
 std::vector<double> MyFourierClass::calculate_amplitude_list(std::vector<std::complex<double>> freq_spect) {
     std::vector<double> amp(freq_spect.size()); // amplitude vector
     for (int i = 0; i < freq_spect.size(); i++) {
         double abbed = std::abs(freq_spect[i]);
-        amp[i] = (abbed); // = 2.*|freq_spec(1:L/2)./L|
+        amp[i] = (abbed); 
     }
     return amp; 
 }
@@ -182,17 +164,31 @@ void MyFourierClass::execute_extract_harmonics(int terms)
 {
     int L = this->dataset.height;
     this->num_of_terms = terms;
-    this->out_synthesis = new std::complex<double> [L];
 
     execute_forward_fft(L);
     this->frequencyList = myhelpers::fftw_complex2std_complex(this->freq_spect, L / 2);
     // Fix frequencies to be correct (dont understand this problem).
    
     this->amplitudeList = calculate_amplitude_list(frequencyList);
-    //TODO: add phase here
-    fourier_series(this->frequencyList, this->amplitudeList, terms, this->Fs, L, out_synthesis);
-    write_to_csv_1d("out_synthesis.csv",out_synthesis, L);
-  //  this->execute_synthesise_from_waves(terms, out_sin, out_cos);
+
+    this->harmonic_output.data = new double* [terms];
+    this->harmonic_output.height = terms;
+    this->harmonic_output.width = this->dataset.height;
+
+    // Each row of `harmonic_output`.data will represent an incrementing number of harmonics.
+    for (int i = 0; i < terms; i++) {
+        int run_terms = i;
+        if (terms_array != NULL) run_terms = this->get_terms_array()[i]; // if terms doesn't always increment by one. 
+
+        auto out_synthesis = new std::complex<double> [L];
+        fourier_series(this->frequencyList, this->amplitudeList, run_terms, this->Fs, L, out_synthesis);
+        
+        this->harmonic_output.data[i] = new double [L];
+        for (int x = 0; x < L; x++) {
+            this->harmonic_output.data[i][x] = out_synthesis[x].real();
+        }
+    }
+    write_to_csv("harmonics_output_data.csv", this->harmonic_output.data, harmonic_output.width, harmonic_output.height);
 }
 
 /// <summary>
