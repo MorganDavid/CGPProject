@@ -18,14 +18,15 @@
 /// </summary>
 /// <returns>Frequency spectrum as fftw_complex* is put into this->prev_output</returns>
 void MyFourierClass::forward_fft(const int bins, const size_t L, myMatrix<double> dataset, fftw_complex* out) {
-    // TODO: test if dataset is intitialized first.
-    // TEMPORARY: get first dimension from this for testing.
+    // Only apply foui
     std::vector<double> col = myhelpers::getColFromMatrix(dataset, 0);
-    MyFourierClass::write_to_csv_1d("blah.csv", &col[0],L);
+    MyFourierClass::write_to_csv_1d("blah.csv", &col[0], L);
     fftw_plan p;
     p = fftw_plan_dft_r2c_1d(L, &col[0], out, FFTW_ESTIMATE);
 
     fftw_execute(p);
+    MyFourierClass::write_to_csv("before.csv", out, L);
+
     //divide output by L
     for (int i = 0; i < L / 2; i++) {
         out[i][0] = 2*abs(out[i][0]) / L;
@@ -49,30 +50,20 @@ void MyFourierClass::forward_fft(const int bins, const size_t L, myMatrix<double
 /// <param name="freq_spect">output from fft</param>
 /// <param name="terms">number of terms to reconstruct with.</param>
 /// TODO: I think this code produces the output flipped/backwards for some reason. 
-void MyFourierClass::fourier_series(const std::vector<std::complex<double>> freq_spect_cmplx, const std::vector<double> amplitudeList, const int terms, const double Fs, const size_t L, double** out_sin, double** out_cos) {
+void MyFourierClass::fourier_series(const std::vector<std::complex<double>> freq_spect_cmplx, const std::vector<double> amplitudeList, const int terms, const double Fs, const size_t L, std::complex<double>* out_synthesis) {
+    using namespace std::complex_literals;
     // -- Find strongest k amplitudes in freq_spect --
     std::vector<double> amp(amplitudeList);
-    //write_to_csv_1d("amp_spec.csv", &amp[0], (int)L/2);
 
     std::vector<int> harms_idx = myhelpers::maxk(amp, terms); // indicies of top harmonics
 
-    //std::vector<double> t(L * 2); // timestep vector TODO: remove this. (leaving for reference later.
-    //std::generate(t.begin(), t.end(), [Fs]() { static int i = 0;  return ((1.0/Fs) * (double)i++ ); });
-
-    // -- Extract component waves --
-    for (int i = harms_idx.size() - 1; i >= 0; i--) {
-        int k = harms_idx[i];
-        double pr = 2 * M_PI * (k * (double)(Fs / L));//input, assuming regular sampling.
-
-        out_cos[i] = new double[L];
-        out_sin[i] = new double[L];
-
-        for (int x = 0; x < L; x++) {
-            double t = 1.0 / Fs * x;
-            double cos_ans = (double)((freq_spect_cmplx[k]).real() * cos(pr * t));  //real(2*yf(k)/L)*cos(w*t(x));
-            double sin_ans = (double)((freq_spect_cmplx[k]).imag() * sin(pr * t));
-            out_cos[i][x] = cos_ans;
-            out_sin[i][x] = sin_ans;
+    for (int x = 0; x < harms_idx.size(); x++) {
+        int k = harms_idx[x];
+        double pr = 2 * M_PI * (k * (double)(Fs / L)); // input, assuming regular sampling.
+        
+        for (int i = 0; i < L; i++) {
+            double t = 1.0 / Fs * i;
+            out_synthesis[i] = out_synthesis[i] + freq_spect_cmplx[k] * exp(1i * pr * t);
         }
     }
 }
@@ -87,7 +78,7 @@ void MyFourierClass::synthesise_from_waves(const int terms, const size_t L,const
         out_synthesis[t-1] = new double[L]();
         for (int i = 0; i < t; i++) {
             for (int z = 0; z < L; z++) {
-                double ans = out_synthesis[t-1][z] + sin_mat[i][z] + cos_mat[i][z];
+                double ans = out_synthesis[t-1][z] + cos_mat[i][z];
                 out_synthesis[t-1][z] = ans;
             }
         }
@@ -191,8 +182,7 @@ void MyFourierClass::execute_extract_harmonics(int terms)
 {
     int L = this->dataset.height;
     this->num_of_terms = terms;
-    this->out_cos = new double* [terms];
-    this->out_sin = new double* [terms];
+    this->out_synthesis = new std::complex<double> [L];
 
     execute_forward_fft(L);
     this->frequencyList = myhelpers::fftw_complex2std_complex(this->freq_spect, L / 2);
@@ -200,9 +190,9 @@ void MyFourierClass::execute_extract_harmonics(int terms)
    
     this->amplitudeList = calculate_amplitude_list(frequencyList);
     //TODO: add phase here
-    fourier_series(this->frequencyList, this->amplitudeList, terms, this->Fs, L, out_sin, out_cos);
-
-    this->execute_synthesise_from_waves(terms, out_sin, out_cos);
+    fourier_series(this->frequencyList, this->amplitudeList, terms, this->Fs, L, out_synthesis);
+    write_to_csv_1d("out_synthesis.csv",out_synthesis, L);
+  //  this->execute_synthesise_from_waves(terms, out_sin, out_cos);
 }
 
 /// <summary>

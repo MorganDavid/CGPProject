@@ -86,9 +86,9 @@ void cgpWrapper::harmonic_runCGP_with_fourier_input(std::string filename) {
     // Modifying data to contain wave properties and input data
     // trainingData will change with each harmonic update, whereas orinal data will always be original input function
     // in input 0.
-    original_data = constructDataSetWithFourierInputs(harmonics_count, Fs, original_data, f.get_cos_mat(), f.get_sin_mat());
+    original_data = constructDataSetWithWaveProperties(harmonics_count, Fs, original_data, f.get_amplitude_list(), f.get_frequency_list());
     // Basically using initialisedatasetfrommatrix as a deep copy constructor.
-    trainingData = constructDataSetWithFourierInputs(harmonics_count, Fs, trainingData, f.get_cos_mat(), f.get_sin_mat());
+    trainingData = constructDataSetWithWaveProperties(harmonics_count, Fs, original_data, f.get_amplitude_list(), f.get_frequency_list());
     setNumInputs(params, trainingData->numInputs);
     saveDataSet(original_data, "original_data.csv");
 
@@ -119,9 +119,9 @@ void cgpWrapper::harmonic_runCGP_wave(std::string filename) {
     // Modifying data to contain wave properties and input data
     // trainingData will change with each harmonic update, whereas orinal data will always be original input function
     // in input 0.
-    original_data = constructDataSetWithFourierInputs(harmonics_count, Fs, original_data, f.get_cos_mat(), f.get_sin_mat());
+    original_data = constructDataSetWithWaveProperties(harmonics_count, Fs, original_data, f.get_amplitude_list(), f.get_frequency_list());
     // Basically using initialisedatasetfrommatrix as a deep copy constructor.
-    trainingData = constructDataSetWithFourierInputs(harmonics_count, Fs, trainingData, f.get_cos_mat(), f.get_sin_mat());
+    trainingData = constructDataSetWithWaveProperties(harmonics_count, Fs, original_data, f.get_amplitude_list(), f.get_frequency_list());
 
     setNumInputs(params, trainingData->numInputs);
     struct chromosome** best_chromos = new struct chromosome* [harmonics_count]();// () initilizes to 0    

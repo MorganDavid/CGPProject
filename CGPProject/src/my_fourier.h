@@ -49,7 +49,7 @@ public:
 
     inline void write_harmonics_to_csv(std::string file_dir) const {
         for (int i = 0; i < (int)this->harmonic_output.height; i++) {
-            MyFourierClass::write_to_csv_1d<double>("/harmonics/"+file_dir+"_"+std::to_string(i)+".csv", this->harmonic_output.data[i], (int)this->harmonic_output.width);
+            MyFourierClass::write_to_csv_1d<double>(file_dir+"_"+std::to_string(i)+".csv", this->harmonic_output.data[i], (int)this->harmonic_output.width);
         }
      };
 
@@ -99,13 +99,6 @@ public:
     inline std::vector<double> get_phase_list() {
         return phaseList;
     }
-    inline double** get_cos_mat() {
-        return out_cos;
-    }
-    inline double** get_sin_mat() {
-        return out_sin;
-    }
-
 
 private:
     myMatrix<double> dataset; // Stores the matrix to be Fourier transformed.
@@ -114,8 +107,7 @@ private:
     myMatrix<double> harmonic_output;
     
     // Stores all sin/cos waves up to num of terms. 
-    double** out_cos;
-    double** out_sin;
+    std::complex<double>* out_synthesis;
     
     fftw_complex* freq_spect;
 
@@ -129,9 +121,9 @@ private:
     };
     static std::vector<double> calculate_amplitude_list(std::vector<std::complex<double>> freq_spect);
 
-    static void fourier_series(const std::vector<std::complex<double>> freq_spect_cmplx, const std::vector<double> amplitudeList, const int terms, const double Fs, const size_t L, double** out_sin, double** out_cos);
+	static void fourier_series(const std::vector<std::complex<double>> freq_spect_cmplx, const std::vector<double> amplitudeList, const int terms, const double Fs, const size_t L, std::complex<double>* out_synthesis);
 
-    static void synthesise_from_waves(const int terms, const size_t L,const double* const * sin_mat, const double*const* cos_mat, double** out_synthesis);
+	static void synthesise_from_waves(const int terms, const size_t L,const double* const * sin_mat, const double*const* cos_mat, double** out_synthesis);
     inline void execute_synthesise_from_waves(const int terms, const double* const* out_sin, const double* const* out_cos) {
         this->harmonic_output.data = new double* [terms];
         this->harmonic_output.height = terms;
