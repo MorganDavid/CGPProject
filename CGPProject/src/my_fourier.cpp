@@ -25,14 +25,14 @@ void MyFourierClass::forward_fft(const int bins, const size_t L, myMatrix<double
     p = fftw_plan_dft_r2c_1d(L, &col[0], out, FFTW_ESTIMATE);
 
     fftw_execute(p);
-    MyFourierClass::write_to_csv("before.csv", out, L);
+    MyFourierClass::write_to_csv("before.csv", out, L/2);
 
-    //divide output by L
+    // divide output by L
     for (int i = 0; i < L / 2; i++) {
-        out[i][0] = 2*abs(out[i][0]) / L;
-        out[i][1] = 2*abs(out[i][1]) / L;
+        out[i][0] = ((out[i][0]) / L);
+        out[i][1] = ((out[i][1]) / L);
     }
-    MyFourierClass::write_to_csv("out.csv", out, L);
+    MyFourierClass::write_to_csv("out.csv", out, L/2);
 
     //for (int i = 0; i < 10; i++) std::cout << prev_output[i][0] << "+"<< prev_output[i][1]<< std::endl;
     fftw_destroy_plan(p);
