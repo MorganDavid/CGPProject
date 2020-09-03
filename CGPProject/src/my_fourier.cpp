@@ -18,20 +18,21 @@
 /// </summary>
 /// <returns>Frequency spectrum as fftw_complex* is put into this->prev_output</returns>
 void MyFourierClass::forward_fft(const int bins, const size_t L, myMatrix<double> dataset, fftw_complex* out) {
-    // TODO: test if dataset is intitialized first.
-    // TEMPORARY: get first dimension from this for testing.
+    // Only apply foui
     std::vector<double> col = myhelpers::getColFromMatrix(dataset, 0);
-    MyFourierClass::write_to_csv_1d("blah.csv", &col[0],L);
+    MyFourierClass::write_to_csv_1d("blah.csv", &col[0], L);
     fftw_plan p;
     p = fftw_plan_dft_r2c_1d(L, &col[0], out, FFTW_ESTIMATE);
 
     fftw_execute(p);
-    //divide output by L
+    MyFourierClass::write_to_csv("before.csv", out, L/2);
+
+    // divide output by L
     for (int i = 0; i < L / 2; i++) {
-        out[i][0] = 2*abs(out[i][0]) / L;
-        out[i][1] = 2*abs(out[i][1]) / L;
+        out[i][0] = ((out[i][0]) / L);
+        out[i][1] = ((out[i][1]) / L);
     }
-    MyFourierClass::write_to_csv("out.csv", out, L);
+    MyFourierClass::write_to_csv("out.csv", out, L/2);
 
     //for (int i = 0; i < 10; i++) std::cout << prev_output[i][0] << "+"<< prev_output[i][1]<< std::endl;
     fftw_destroy_plan(p);
@@ -49,59 +50,31 @@ void MyFourierClass::forward_fft(const int bins, const size_t L, myMatrix<double
 /// <param name="freq_spect">output from fft</param>
 /// <param name="terms">number of terms to reconstruct with.</param>
 /// TODO: I think this code produces the output flipped/backwards for some reason. 
-void MyFourierClass::fourier_series(const std::vector<std::complex<double>> freq_spect_cmplx, const std::vector<double> amplitudeList, const int terms, const double Fs, const size_t L, double** out_sin, double** out_cos) {
+void MyFourierClass::fourier_series(const std::vector<std::complex<double>> freq_spect_cmplx, const std::vector<double> amplitudeList, const int terms, const double Fs, const size_t L, std::complex<double>* out_synthesis) {
+    using namespace std::complex_literals;
     // -- Find strongest k amplitudes in freq_spect --
     std::vector<double> amp(amplitudeList);
-    //write_to_csv_1d("amp_spec.csv", &amp[0], (int)L/2);
 
     std::vector<int> harms_idx = myhelpers::maxk(amp, terms); // indicies of top harmonics
 
-    //std::vector<double> t(L * 2); // timestep vector TODO: remove this. (leaving for reference later.
-    //std::generate(t.begin(), t.end(), [Fs]() { static int i = 0;  return ((1.0/Fs) * (double)i++ ); });
+    for (int x = 0; x < harms_idx.size(); x++) {
+        int k = harms_idx[x];
+        double pr = 2 * M_PI * (k * (double)(Fs / L)); // input, assuming regular sampling.
+        
+        for (int i = 0; i < L; i++) {
+            double t = 1.0 / Fs * i;
+            std::complex<double> debug2 = 1i * pr * t;
 
-    // -- Extract component waves --
-    for (int i = harms_idx.size() - 1; i >= 0; i--) {
-        int k = harms_idx[i];
-        double pr = 2 * M_PI * (k * (double)(Fs / L));//input, assuming regular sampling.
-
-        out_cos[i] = new double[L];
-        out_sin[i] = new double[L];
-
-        for (int x = 0; x < L; x++) {
-            double t = 1.0 / Fs * x;
-            double cos_ans = (double)((2.0 * freq_spect_cmplx[k]).real() * cos(pr * t));  //real(2*yf(k)/L)*cos(w*t(x));
-            double sin_ans = (double)((2.0 * freq_spect_cmplx[k]).imag() * sin(pr * t));
-            out_cos[i][x] = cos_ans;
-            out_sin[i][x] = sin_ans;
-        }
-        // This code produces the spectrums backwards. Don't know why, reverse to fix.
-        //std::reverse(out_cos[i], out_cos[i] + L);
-        //std::reverse(out_sin[i], out_sin[i] + L);
-    }
-}
-/// <summary>
-/// Uses the results from `fourier_series` to synthesise the original function using numbers of harmonics UP TO `terms`. 
-/// </summary>
-/// <param name="out_synthesis">Must be initialized with first dimension size `terms`. Indexing out_synthesis[0] will give you the result of the fourier series with 1 harmonic,
-/// out_synthesis[1] will give you the result with 2 harmonics and so on up to `terms`.</param>
-void MyFourierClass::synthesise_from_waves(const int terms, const size_t L,const double*const* sin_mat, const double* const * cos_mat, double** out_synthesis) {
-    for (int t = 1; t < terms+1; t++){
-        out_synthesis[t-1] = new double[L]();
-        for (int i = 0; i < t; i++) {
-            for (int z = 0; z < L; z++) {
-                double ans = out_synthesis[t-1][z] + sin_mat[i][z] + cos_mat[i][z];
-                out_synthesis[t-1][z] = ans;
-            }
+            out_synthesis[i] = out_synthesis[i] + freq_spect_cmplx[k] * exp(debug2);
         }
     }
-    
 }
 
 std::vector<double> MyFourierClass::calculate_amplitude_list(std::vector<std::complex<double>> freq_spect) {
     std::vector<double> amp(freq_spect.size()); // amplitude vector
     for (int i = 0; i < freq_spect.size(); i++) {
         double abbed = std::abs(freq_spect[i]);
-        amp[i] = (abbed); // = 2.*|freq_spec(1:L/2)./L|
+        amp[i] = (abbed); 
     }
     return amp; 
 }
@@ -126,6 +99,7 @@ void MyFourierClass::inverse_fft(const int terms, fftw_complex* input, double* o
 // DISCLAIMER: copied some of this function's code from cgp.c
 // First line of csv must be inputs,outputs,samples. Same as cgp library.
 // Also allocates data for this->dataset.
+// TODO: this function has stopped working, fix it. 
 void MyFourierClass::load_from_csv(const std::string file_dir) {
     std::ifstream file(file_dir);
     std::string line;
@@ -144,7 +118,7 @@ void MyFourierClass::load_from_csv(const std::string file_dir) {
         std::getline(file, line);
 
         if (!file.good()) {
-            std::cout<< (file_dir + " at row " + std::to_string(r))<<std::endl;
+            std::cout<< ("ERROR "+file_dir + " at row " + std::to_string(r))<<std::endl;
             break;
         }
 
@@ -155,7 +129,7 @@ void MyFourierClass::load_from_csv(const std::string file_dir) {
             std::string v;
             std::getline(iss, v, ',');
             if (!iss.good()) {
-                std::cout << (file_dir + " at " + std::to_string(r) + "," + std::to_string(c))<<std::endl;
+                std::cout << ("ERROR" + file_dir + " at " + std::to_string(r) + "," + std::to_string(c))<<std::endl;
                 break;
             }
             std::stringstream ss(v);
@@ -191,18 +165,32 @@ void MyFourierClass::setDatasetFromCGP(struct dataSet* data)
 void MyFourierClass::execute_extract_harmonics(int terms)
 {
     int L = this->dataset.height;
-    double** out_cos = new double* [terms];
-    double** out_sin = new double* [terms];
+    this->num_of_terms = terms;
 
     execute_forward_fft(L);
     this->frequencyList = myhelpers::fftw_complex2std_complex(this->freq_spect, L / 2);
     // Fix frequencies to be correct (dont understand this problem).
    
     this->amplitudeList = calculate_amplitude_list(frequencyList);
-    //TODO: add phase here
-    fourier_series(this->frequencyList, this->amplitudeList, terms, this->Fs, L, out_sin, out_cos);
 
-    this->execute_synthesise_from_waves(terms, out_sin, out_cos);
+    this->harmonic_output.data = new double* [terms];
+    this->harmonic_output.height = terms;
+    this->harmonic_output.width = this->dataset.height;
+
+    // Each row of `harmonic_output`.data will represent an incrementing number of harmonics.
+    for (int i = 0; i < terms; i++) {
+        int run_terms = i;
+        if (terms_array != NULL) run_terms = this->get_terms_array()[i]; // if terms doesn't always increment by one. 
+
+        auto out_synthesis = new std::complex<double> [L];
+        fourier_series(this->frequencyList, this->amplitudeList, run_terms, this->Fs, L, out_synthesis);
+        
+        this->harmonic_output.data[i] = new double [L];
+        for (int x = 0; x < L; x++) {
+            this->harmonic_output.data[i][x] = out_synthesis[x].real();
+        }
+    }
+    write_to_csv("harmonics_output_data.csv", this->harmonic_output.data, harmonic_output.width, harmonic_output.height);
 }
 
 /// <summary>
