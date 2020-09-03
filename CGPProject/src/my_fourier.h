@@ -48,6 +48,7 @@ public:
     };
 
     inline void write_harmonics_to_csv(std::string file_dir) const {
+        MyFourierClass::write_to_csv<double>(file_dir + ".csv", this->harmonic_output.data, this->harmonic_output.width, this->harmonic_output.height);
         for (int i = 0; i < (int)this->harmonic_output.height; i++) {
             MyFourierClass::write_to_csv_1d<double>(file_dir+"_"+std::to_string(i)+".csv", this->harmonic_output.data[i], (int)this->harmonic_output.width);
         }

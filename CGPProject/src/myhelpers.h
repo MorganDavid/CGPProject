@@ -18,6 +18,14 @@ namespace myhelpers {
 		return out;
 	};
 
+	template<class M>
+	inline std::vector<M> getColFromMatrix(M** mat, const size_t height, const size_t x) {
+		std::vector<M> out(height);
+		for (int i = 0; i < height; ++i) {
+			out[i] = (mat[i][x]);
+		}
+		return out;
+	};
 	/// <summary>
 	/// Converts from fftw_complex to std::complex. O(n) time. 
 	/// </summary>

@@ -63,7 +63,9 @@ void MyFourierClass::fourier_series(const std::vector<std::complex<double>> freq
         
         for (int i = 0; i < L; i++) {
             double t = 1.0 / Fs * i;
-            out_synthesis[i] = out_synthesis[i] + freq_spect_cmplx[k] * exp(1i * pr * t);
+            std::complex<double> debug2 = 1i * pr * t;
+
+            out_synthesis[i] = out_synthesis[i] + freq_spect_cmplx[k] * exp(debug2);
         }
     }
 }
