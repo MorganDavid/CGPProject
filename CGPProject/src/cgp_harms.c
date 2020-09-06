@@ -3098,21 +3098,21 @@ DLL_EXPORT struct chromosome* runCGP(struct parameters *params, struct dataSet *
 		getBestChromosome(parentChromos, childrenChromos, params->mu, params->lambda, bestChromo);
 
 		/* check termination conditions */
-		if (getChromosomeFitness(bestChromo) <= params->targetFitness) {
+		/*if (getChromosomeFitness(bestChromo) <= params->targetFitness) {
 
 			if (params->updateFrequency != 0) {
 				printf("%d\t%f - Solution Found\n", gen, bestChromo->fitness);
 			}
 
 			break;
-		}
+		}*/
 
 		/* Write chromo fitness to params every generation.*/
 
 
 		/* display progress to the user at the update frequency specified */
 		// don't print if using repititions. 
-		if (!(params->myNumRepeats>0) && ( params->updateFrequency != 0 && (gen % (params->updateFrequency * 10) == 0 || gen >= numGens - 1) )) {
+		if (/*!(params->myNumRepeats>0) &&*/ ( params->updateFrequency != 0 && (gen % (params->updateFrequency * 10) == 0 || gen >= numGens - 1) )) {
 			printf("%d\t%f\n", gen, bestChromo->fitness);
 		}
 		//Update results parameter
