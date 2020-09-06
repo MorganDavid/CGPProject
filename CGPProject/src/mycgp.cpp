@@ -49,7 +49,7 @@ void cgpWrapper::initializeParams() {
     const int harmonics_count = 3;
 
     int updateFrequency = 20; // must be integer multiple of myNumGens
-    double targetFitness = 3;
+    double targetFitness = 0.2;
     int fourier_terms = 3;
     double** out_synth = new double* [fourier_terms];
 
@@ -57,18 +57,18 @@ void cgpWrapper::initializeParams() {
 
     addNodeFunction(params, "add,mul,pi,sin,cos");
 
-   // setCustomFitnessFunction(params, MSE, "MSE");
-    
+    setCustomFitnessFunction(params, MSE, "MSE");
+
     setTargetFitness(params, targetFitness);
-    setLambda(params, 128);
-    setMu(params, 4);
+  //  setLambda(params, 128);
+   // setMu(params, 4);
     setUpdateFrequency(params, updateFrequency);
     //setMutationType(params, "point");
     setMutationRate(params, 0.4);
     setNumThreads(params, 4);
     printParameters(params);
-    params->myNumGens = 1000;
-    params->myNumRepeats = 1;
+    params->myNumGens = 10000;
+    params->myNumRepeats = 2;
 
     setHarmonicRunParamaters(params, harmonics_count, 0, nullptr);
     setHarmonicRunResultsInit(params, harmonics_count, 50000, updateFrequency);
@@ -90,6 +90,7 @@ void cgpWrapper::harmonic_runCGP(std::string filename) {
     // trainingData will change with each harmonic update, whereas orinal data will always be original input function
     // in input 0.
     original_data = constructDataSetWithWaveProperties(harmonics_count, Fs, original_data, f.get_amplitude_list(), f.get_frequency_list());
+    saveDataSet(original_data, "output/original_dataset_with_properties.csv");
     // Basically using initialisedatasetfrommatrix as a deep copy constructor.
     trainingData = constructDataSetWithWaveProperties(harmonics_count, Fs, trainingData, f.get_amplitude_list(), f.get_frequency_list());
 
@@ -116,8 +117,8 @@ void cgpWrapper::harmonic_runCGP(std::string filename) {
     best_chromos[harmonics_count - 1] = my_runCGP(original_data);
     writeAndPlot(best_chromos[harmonics_count - 1], original_data, "plot_final");
 
-    MyFourierClass::write_to_csv<double>("realfitness", getRealFitnessFromParams(params), params->myNumGens / params->updateFrequency, harmonics_count);
-    MyFourierClass::write_to_csv<double>("harmonicfitness", getHarmonicFitnessFromParams(params), params->myNumGens / params->updateFrequency, harmonics_count);
+    MyFourierClass::write_to_csv<double>("realfitness.csv", getRealFitnessFromParams(params), params->myNumGens / params->updateFrequency, harmonics_count);
+    MyFourierClass::write_to_csv<double>("harmonicfitness.csv", getHarmonicFitnessFromParams(params), params->myNumGens / params->updateFrequency, harmonics_count);
 
     freeDataSet(trainingData);
     for (int i = 0; i < harmonics_count; i++) {

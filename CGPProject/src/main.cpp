@@ -14,6 +14,6 @@ int main() {
     f.write_to_csv_1d("freq.csv",&f.get_frequency_list()[0],f.get_frequency_list().size());
   */
     cgpWrapper::initializeParams();
-    cgpWrapper::harmonic_runCGP("datasets/1000pntsAt100Fs.csv");
+    cgpWrapper::harmonic_runCGP("datasets/200pointstrig.csv");
     //cgpWrapper::my_runCGP(initialiseDataSetFromFile("complex-300pnts.csv"));
 }
