@@ -12,7 +12,9 @@
 function generate_results_chart()
     harmonicfitness=csvread("harmonicfitness_200pointstrig_waveproperties.csv");
     realfitness=csvread("realfitness_200pointstrig_waveproperties.csv");
-    
+    % Remove first row
+    harmonicfitness(1,:)=[];
+    realfitness(1,:)=[];
     % C++ code doesn't handle early stopped code so fix it here
     harmonicfitness( 1, 2:length(harmonicfitness) - 1 )=0;
 
@@ -33,7 +35,7 @@ function generate_results_chart()
   % f=figure('visible','on');    
     y=realfitness.';
     y=y(:);%Change to one column
-    p=plot(1:20:30000,x,'-',1:20:30000,y,'-');
+    p=plot(1:20:30000,x,'-',1:20:30000,y,'-','LineWidth',1.2);
     xlabel("Generation");
     ylabel("Fitness (MSE)");
     legend(p([1 2]),"Harmonic MSE","Actual MSE");
@@ -43,5 +45,5 @@ function generate_results_chart()
     xline(10e3,':',{'Epoch 2'},'HandleVisibility','off');
     xline(20e3,':',{'Epoch 3'},'HandleVisibility','off');
     title("Harmonic CGP (Approach 2 with Input Approach 2)");
-    saveas(gca,"waveproperties_200pointstrig.png");
+    saveas(gca,"a1_ia2_200pointstrig.png");
 end

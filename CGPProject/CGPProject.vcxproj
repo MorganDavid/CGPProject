@@ -28,7 +28,6 @@
   <ItemGroup>
     <ClCompile Include="src\adder_test.cpp" />
     <ClCompile Include="src\cgp_harms.c" />
-    <ClCompile Include="src\cgp_library_extension.c" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\mycgp.cpp" />
     <ClCompile Include="src\my_fourier.cpp" />

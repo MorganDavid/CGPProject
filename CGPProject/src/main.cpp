@@ -18,6 +18,6 @@ int main() {
     f.write_to_csv_1d("syntehsiz.csv", &ya[0],ya.size());*/
 
     cgpWrapper::initializeParams();
-    cgpWrapper::harmonic_runCGP_wave("datasets/1000withphase.csv");
+    cgpWrapper::harmonic_runCGP("datasets/200pointstrig.csv");
    // cgpWrapper::my_runCGP(initialiseDataSetFromFile("complex-300pnts.csv"));
 }
