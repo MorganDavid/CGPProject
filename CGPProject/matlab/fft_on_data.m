@@ -6,7 +6,7 @@ T = 1/Fs;             % Sampling period
 L = 200;             % Length of signal
 t = (0:L-1)*T;        % Time vector#
 d = Fs/L;
-f = (0:L-1)*d; % <-- Don't understand this 
+f = (0:L-1)*d;
 u = 2*pi*f;
 %noise = 1.2*randn(1,L);
 y = 4*sin(2*pi*4*t+1)+sin(2*pi*3*t+0.3)+cos(2*pi*9*t+0.2)*2;
@@ -43,10 +43,6 @@ end
 %         yy(i) = yf_sorted(i) * exp(1i * pr * t);
 %     end
 % end
-
-%plot(t,yy,t,y);
-
-%plot(t,y,t,yy)     % add offset for visual purposes
 
 f=figure('visible','on');
 
