@@ -1,3 +1,5 @@
+%To plot the actual vs harmonic fitness diagram. 
+
 t=1:0.01:4;
 x_actual =  4*sin(2*pi*4*t+1)+sin(2*pi*3*t+0.3)+cos(2*pi*9*t+0.2)*2;
 x_prediction = 3.8*sin(2*pi*4*t+1.1);
